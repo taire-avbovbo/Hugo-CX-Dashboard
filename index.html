@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hugo CX — Service Delivery Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f5f5f0;color:#111;font-size:13px;line-height:1.55;}
+/* Auth */
+.auth-screen{position:fixed;inset:0;background:#f5f5f0;display:flex;align-items:center;justify-content:center;z-index:9999;}
+.auth-box{padding:48px 52px;width:420px;text-align:center;background:#fff;border:1px solid #eee;}
+.auth-box input{width:100%;padding:12px 14px;border:2px solid #eee;font-family:'DM Sans',sans-serif;font-size:13px;color:#111;outline:none;margin-bottom:10px;background:#fff;}
+.auth-box input:focus{border-color:#1a56db;}
+.auth-box .auth-btn{width:100%;padding:13px;background:#0f172a;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.auth-box .auth-btn:hover{background:#333;}
+.auth-box .auth-link{font-size:12px;color:#888;cursor:pointer;margin-top:8px;display:inline-block;}
+.auth-box .auth-link:hover{color:#1a56db;}
+.auth-box .auth-err{font-size:11px;color:#dc2626;min-height:16px;margin-bottom:8px;}
+/* Layout */
+.header{background:#fff;border-bottom:1px solid #d0cfc8;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}
+.h-title{font-size:14px;font-weight:600;color:#0f172a;}.h-sub{font-size:11px;color:#888;margin-top:2px;}
+.h-user{font-size:11px;color:#888;}.h-user strong{color:#0f172a;}
+.h-btn{font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border:1px solid #d8d6d0;background:#fff;color:#888;cursor:pointer;margin-left:8px;}
+.h-btn:hover{border-color:#b91c1c;color:#b91c1c;}
+.pill{display:inline-block;font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;border:1px solid;margin-left:3px;}
+.pill-b{background:#e8f0fc;color:#1a56db;border-color:#b3ccf5;}.pill-g{background:#e6f4ee;color:#0a7c4e;border-color:#b6dfcd;}.pill-o{background:#fdf3e6;color:#b45309;border-color:#f5d5a0;}
+.tabbar{background:#fff;border-bottom:1px solid #d0cfc8;display:flex;padding:0 18px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.tab{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:10px 12px;border:none;background:none;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab:hover{color:#333;}.tab.act{color:#0f172a;border-bottom-color:#0f172a;}
+.pane{display:none;padding:16px 18px;}.pane.act{display:block;}
+.sec{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.13em;color:#888;margin:14px 0 7px;padding-bottom:4px;border-bottom:1px solid #e0ded8;}.sec:first-child{margin-top:0;}
+.sec-title{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 3px;letter-spacing:-.01em;}
+.krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px;margin-bottom:12px;}
+.kcard{background:#fff;border:1px solid #d8d6d0;padding:11px 13px;position:relative;}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,#333);}
+.klbl{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:#888;margin-bottom:4px;}
+.kval{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:#0f172a;line-height:1;}
+.ksub{font-size:10px;color:#888;margin-top:3px;}
+.kdelta{font-family:'DM Mono',monospace;font-size:10px;margin-top:2px;}
+.dpos{color:#0a7c4e;}.dneg{color:#b91c1c;}.dwarn{color:#b45309;}
+.rag{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.rag-g{background:#0a7c4e;box-shadow:0 0 0 2px rgba(10,124,78,.2);}.rag-a{background:#b45309;box-shadow:0 0 0 2px rgba(180,83,9,.2);}.rag-r{background:#b91c1c;box-shadow:0 0 0 2px rgba(185,28,28,.2);}
+.kcard.status-g{background:#f0faf4;border-color:#b6dfcd;}.kcard.status-a{background:#fefbf3;border-color:#f5d5a0;}.kcard.status-r{background:#fef5f5;border-color:#fecaca;}
+/* Gap indicator */
+.gap-bar{display:flex;align-items:center;gap:4px;margin-top:4px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;}
+.gap-bar .arrow{font-size:14px;line-height:1;}
+.gap-bar.gap-g{color:#0a7c4e;}.gap-bar.gap-a{color:#b45309;}.gap-bar.gap-r{color:#b91c1c;}
+.gap-chip{display:inline-block;padding:2px 6px;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:#fff;margin-top:3px;}
+.gap-chip.r{background:#b91c1c;}.gap-chip.a{background:#b45309;}.gap-chip.g{background:#0a7c4e;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-bottom:11px;}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr;}}
+.ccard{background:#fff;border:1px solid #d8d6d0;padding:13px 15px;margin-bottom:11px;}
+.ctitle{font-size:12px;font-weight:600;color:#0f172a;margin-bottom:2px;}
+.csub{font-size:10px;color:#888;margin-bottom:10px;}
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;}
+.dtbl th{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:#888;border-bottom:1px solid #d8d6d0;padding:6px 10px;text-align:right;}
+.dtbl th:first-child{text-align:left;padding-left:12px;}
+.dtbl td{padding:7px 10px;border-bottom:1px solid #eee;color:#555;text-align:right;}
+.dtbl td:first-child{text-align:left;color:#0f172a;font-weight:500;padding-left:12px;}
+.dtbl tr.tot td{background:#f8fafc;font-weight:600;border-top:1px solid #d0cfc8;}
+.dtbl tr:hover td{background:#fafaf8;}
+.hi{color:#0a7c4e;font-weight:600;}.lo{color:#b91c1c;font-weight:600;}.mid{color:#b45309;font-weight:600;}
+.bg-g{background:#e6f4ee !important;}.bg-r{background:#fef2f2 !important;}.bg-a{background:#fdf3e6 !important;}
+.callout{border-left:3px solid var(--cc,#64748b);background:var(--cb,#f8fafc);padding:10px 14px;font-size:11px;color:#475569;margin-bottom:11px;line-height:1.65;}
+.callout strong{color:#0f172a;}
+.callout.blue{--cc:#1a56db;--cb:#eef3fc;}.callout.teal{--cc:#0a7c4e;--cb:#e6f4ee;}.callout.amber{--cc:#b45309;--cb:#fdf3e6;}.callout.red{--cc:#b91c1c;--cb:#fef2f2;}.callout.dark{--cc:#1e293b;--cb:#f1f5f9;}
+.divider{background:#0f172a;color:#fff;padding:7px 14px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 11px;}
+.ph{background:#f0efe8;border:2px dashed #ccc9be;padding:28px;text-align:center;color:#888;font-size:12px;margin-bottom:11px;}
+.ph h4{color:#0f172a;font-size:13px;margin-bottom:4px;font-weight:600;}
+.ch{position:relative;height:220px;margin:6px 0;}.ch-sm{height:160px;}.ch-lg{height:280px;}
+.ctrl{margin-bottom:8px;}
+.ctrl label{display:block;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:2px;}
+.ctrl input,.ctrl select{font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;border:1px solid #d8d6d0;width:100%;background:#fff;}
+.ctrl input[type=checkbox]{width:auto;margin-right:6px;}
+.toggle{display:flex;gap:4px;margin-bottom:8px;}
+.toggle-btn{padding:5px 12px;font-family:'DM Mono',monospace;font-size:10px;border:1px solid #d8d6d0;background:#fff;cursor:pointer;color:#888;}
+.toggle-btn.on{background:#0f172a;color:#fff;border-color:#0f172a;}
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH ═══ -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-box">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Hugo Technologies</div>
+    <div style="font-size:20px;font-weight:700;color:#111;margin-bottom:3px;">CX Dashboard</div>
+    <div style="font-size:12px;color:#999;margin-bottom:24px;">Confidential — authorised access only</div>
+    <button onclick="googleSignIn()" style="width:100%;padding:12px;background:#fff;border:2px solid #eee;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;color:#333;">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.77-4.59l-7.98-6.19A23.99 23.99 0 000 24c0 3.77.9 7.35 2.56 10.56l7.97-5.97z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.97C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><div style="flex:1;height:1px;background:#eee"></div><span style="font-size:10px;color:#bbb;font-family:'DM Mono',monospace">OR</span><div style="flex:1;height:1px;background:#eee"></div></div>
+    <input id="auth-email" type="email" placeholder="Email address">
+    <input id="auth-pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')authAction()">
+    <div id="auth-err" class="auth-err"></div>
+    <button class="auth-btn" onclick="authAction()">Sign In</button>
+    <div style="font-size:10px;color:#bbb;margin-top:20px;">@hugotech.co accounts only</div>
+  </div>
+</div>
+
+<script>
+// Firebase Auth
+firebase.initializeApp({apiKey:"AIzaSyCUQDYoF7ktsSBxoaCVg2-mfciS3gFJVHM",authDomain:"hugo-billing.firebaseapp.com",projectId:"hugo-billing"});
+const auth=firebase.auth();
+const HUGO_DOMAIN='hugotech.co';
+function getDomain(e){return (e||'').split('@')[1]||'';}
+function validDomain(e){return getDomain(e)===HUGO_DOMAIN;}
+let currentUser=null;
+
+function googleSignIn(){
+  const provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).then(r=>{
+    if(!validDomain(r.user.email)){auth.currentUser.delete();document.getElementById('auth-err').textContent='Access restricted to @hugotech.co';return;}
+  }).catch(x=>{document.getElementById('auth-err').textContent=x.message;});
+}
+function authAction(){
+  const e=document.getElementById('auth-email').value,p=document.getElementById('auth-pw').value;
+  if(!validDomain(e)){document.getElementById('auth-err').textContent='Must be @hugotech.co';return;}
+  auth.signInWithEmailAndPassword(e,p).catch(x=>{document.getElementById('auth-err').textContent=x.message;});
+}
+auth.onAuthStateChanged(user=>{
+  if(user&&validDomain(user.email)){
+    currentUser=user;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+  }
+});
+function signOut(){auth.signOut().then(()=>{document.getElementById('auth-screen').style.display='flex';currentUser=null;});}
+</script>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div><div class="h-title">Hugo CX — Service Delivery Dashboard</div><div class="h-sub">CX & Digital Ops · ex-Meta · ex-Google · Feb 2026</div></div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span class="pill pill-b">Lagos</span><span class="pill pill-o">SA</span><span class="pill pill-g">US</span>
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;margin-left:6px;">₦1,458 · ZAR 16</span>
+    <span class="h-user" style="margin-left:12px;">Signed in as <strong id="user-name">—</strong></span>
+    <button class="h-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- ═══ TABS ═══ -->
+<div class="tabbar">
+  <div class="tab act" onclick="go('core')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">1</span> Core KPIs</div>
+  <div class="tab" onclick="go('costclient')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">2</span> Cost & Client Profitability</div>
+  <div class="tab" onclick="go('market')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">3</span> Market View</div>
+  <div class="tab" onclick="go('staffing')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">4</span> Staffing</div>
+  <div class="tab" onclick="go('forecast')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">5</span> P&L Forecast</div>
+  <div class="tab" onclick="go('ramp')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">6</span> Ramp Economics</div>
+  <div class="tab" onclick="go('inputs')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">⚙</span> Inputs & Targets</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 1: CORE KPIs -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane act" id="p-core">
+<div class="callout dark"><strong>Goal:</strong> 30-second health check. <span class="rag rag-g"></span> ≤2% <span class="rag rag-a"></span> 2-10% <span class="rag rag-r"></span> >10%. <strong>P0</strong> · Simone, Ori, Finance + Taire</div>
+
+<div class="sec-title" style="color:#1a56db;font-size:15px;margin-bottom:4px;">Hugo Management KPIs — Feb 2026</div>
+<div style="font-size:10px;color:#888;margin-bottom:10px;font-family:'DM Mono',monospace;">ACTUALS · Updated Apr 8 2026</div>
+
+<div class="krow" style="grid-template-columns:repeat(6,1fr);">
+  <div class="kcard status-a" style="--kc:#1a56db">
+    <div class="klbl"><span class="rag rag-a"></span>1. CX Revenue</div><div class="kval">$1.57M</div><div class="ksub">Target: $1.66M · Jan: $1.13M</div>
+    <div class="gap-bar gap-a"><span class="arrow">▲</span> +39% MoM</div>
+    <div class="gap-chip a">5.4% BELOW TARGET</div>
+  </div>
+  <div class="kcard status-r" style="--kc:#0a7c4e">
+    <div class="klbl"><span class="rag rag-r"></span>2. CX EBITDA</div><div class="kval">~$45K</div><div class="ksub">Target: $120K+ · Jan: ~$20K</div>
+    <div class="gap-bar gap-g"><span class="arrow">▲</span> +125% MoM</div>
+    <div class="gap-chip r">63% BELOW TARGET</div>
+  </div>
+  <div class="kcard status-a" style="--kc:#0a7c4e">
+    <div class="klbl"><span class="rag rag-a"></span>3. Cost/Agent NG</div><div class="kval">$581</div><div class="ksub">Target: $550 · Jan: $640</div>
+    <div class="gap-bar gap-g"><span class="arrow">▼</span> -9.2% MoM</div>
+    <div class="gap-chip a">5.6% ABOVE</div>
+  </div>
+  <div class="kcard status-r" style="--kc:#b45309">
+    <div class="klbl"><span class="rag rag-r"></span>4. Cost/Agent SA</div><div class="kval">$1,329</div><div class="ksub">Q2 tgt: $1,100 · Jan: $1,409</div>
+    <div class="gap-bar gap-g"><span class="arrow">▼</span> -5.7% MoM</div>
+    <div class="gap-chip r">20.8% ABOVE</div>
+  </div>
+  <div class="kcard status-a" style="--kc:#b91c1c">
+    <div class="klbl"><span class="rag rag-a"></span>5. Cost/Agent US</div><div class="kval">$3,493</div><div class="ksub">Target: $3,200 · Jan: n/a</div>
+    <div class="gap-bar gap-a"><span class="arrow">—</span> New metric</div>
+    <div class="gap-chip a">9.2% ABOVE</div>
+  </div>
+  <div class="kcard status-r" style="--kc:#64748b">
+    <div class="klbl"><span class="rag rag-r"></span>6. Budget Adh.</div><div class="kval">24%</div><div class="ksub">Target: 19% · Jan: ~24%</div>
+    <div class="gap-bar gap-a"><span class="arrow">—</span> Flat MoM</div>
+    <div class="gap-chip r">5pp ABOVE TARGET</div>
+  </div>
+</div>
+
+<div class="sec-title" style="color:#888;font-size:11px;margin-bottom:4px;">OPERATING KPIs</div>
+<div class="krow" style="grid-template-columns:repeat(7,1fr);">
+  <div class="kcard" style="--kc:#333"><div class="klbl">Gross Profit</div><div class="kval">$290K</div><div class="ksub">GM 20%</div></div>
+  <div class="kcard status-g" style="--kc:#6d28d9"><div class="klbl"><span class="rag rag-g"></span>Pilots</div><div class="kval">2</div><div class="ksub">Tgt 2-3/qtr</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Rev/Agent</div><div class="kval">$1,807</div></div>
+  <div class="kcard status-r" style="--kc:#b91c1c"><div class="klbl"><span class="rag rag-r"></span>Rev Conc.</div><div class="kval">62%</div><div class="ksub">Tgt &lt;55%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Buffer %</div><div class="kval">10.7%</div></div>
+  <div class="kcard status-r" style="--kc:#b91c1c"><div class="klbl"><span class="rag rag-r"></span>US Attrition</div><div class="kval">~22%</div><div class="ksub">Tgt &lt;15%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Mgmt OH</div><div class="kval">75</div><div class="ksub">16PM+7Train+Supp</div></div>
+</div>
+
+<div class="g2">
+  <div class="ccard"><div class="ctitle">Revenue Trajectory vs Target</div><div class="csub">USD millions per month · $26M run rate by Dec 2026</div><div class="ch"><canvas id="c-rev-traj"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Cost / Billable Agent vs Target</div><div class="csub">USD per agent per month · Actual (blue) vs Target (green)</div><div class="ch"><canvas id="c-cost-tgt"></canvas></div></div>
+</div>
+
+<div class="g3">
+  <div class="ccard"><div class="ctitle">Revenue Mix — Top 5 + Rest</div><div class="csub">USD thousands · Feb 2026</div><div class="ch ch-sm"><canvas id="c-mix"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Headcount Mix</div><div class="csub"># of agents · Feb 2026</div><div class="ch ch-sm"><canvas id="c-hc-mix"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Geographic Mix</div><div class="csub"># of agents by market · Feb 2026</div><div class="ch ch-sm"><canvas id="c-geo-mix"></canvas></div></div>
+</div>
+
+<div class="ccard">
+  <div class="ctitle">P&L Summary — Jan vs Feb</div><div class="csub">USD · Color: positive/negative trend</div>
+  <table class="dtbl">
+    <tr><th style="text-align:left">Line</th><th>Jan</th><th>Feb</th><th>MoM Δ</th><th>MoM %</th><th>Annualized</th><th style="text-align:left">Driver</th></tr>
+    <tr class="bg-g"><td><strong>Gross Revenue</strong></td><td>$1.13M</td><td>$1.57M</td><td class="hi">+$437K</td><td class="hi">+39%</td><td>$18.8M</td><td style="text-align:left">GH ramp + new</td></tr>
+    <tr><td>&nbsp;&nbsp;GH Africa</td><td>$190K</td><td>$535K</td><td class="hi">+$345K</td><td class="hi">+182%</td><td>$6.4M</td><td style="text-align:left">Lagos W2 + SA Lilly</td></tr>
+    <tr><td>&nbsp;&nbsp;GH US</td><td>$203K</td><td>$507K</td><td class="hi">+$304K</td><td class="hi">+150%</td><td>$6.1M</td><td style="text-align:left">MO W3+W4</td></tr>
+    <tr><td>&nbsp;&nbsp;Other CX</td><td>$560K</td><td>$616K</td><td class="hi">+$57K</td><td class="hi">+10%</td><td>$7.4M</td><td style="text-align:left">Almedia, new logos</td></tr>
+    <tr class="bg-r"><td><strong>COS</strong></td><td>$890K</td><td>$1.18M</td><td class="lo">+$287K</td><td class="lo">+32%</td><td>$14.1M</td><td style="text-align:left">GMC + Lagos training</td></tr>
+    <tr class="bg-g"><td><strong>Gross Profit</strong></td><td>$180K</td><td>$290K</td><td class="hi">+$110K</td><td class="hi">+61%</td><td>$3.5M</td><td style="text-align:left"></td></tr>
+    <tr><td><strong>GM%</strong></td><td class="lo">17%</td><td class="mid">20%</td><td class="hi">+3pp</td><td></td><td></td><td style="text-align:left;color:#b91c1c">Tgt 35-40% steady</td></tr>
+    <tr class="bg-a"><td><strong>OpEx</strong></td><td>$270K</td><td>$377K</td><td class="lo">+$107K</td><td class="lo">+40%</td><td>$4.5M</td><td style="text-align:left">Hiring, prof svcs</td></tr>
+    <tr><td><strong>EBITDA</strong></td><td>~$20K</td><td>~$45K</td><td class="hi">+$25K</td><td></td><td>$540K</td><td style="text-align:left">Thin but improving</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 2: COST & CLIENT PROFITABILITY (MERGED) -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-costclient">
+<div class="callout dark"><strong>Goal:</strong> Why is cost/agent moving? Which clients make money? <strong>P0+P1</strong> · Taire + Finance</div>
+
+<div class="callout red" style="margin-bottom:11px"><strong>⚠ Accounts needing attention:</strong> Backroads (175% buffer — 7 buffers on 4 billable). Stream Hatchet (57% buffer). Sonovate (43% buffer). GH Lagos temporarily negative during W2 training. These require immediate staffing intervention.</div>
+
+<div class="sec">Client Profitability — Top 10 by Size + Attention List</div>
+<div class="ccard">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Client</th><th>Market</th><th>Rate</th><th>HC</th><th>Rev</th><th>COS</th><th>GM</th><th>GM%</th><th style="text-align:left">Status</th></tr>
+    <tr><td><strong>GH Africa</strong></td><td>Lagos+SA</td><td>$13.85-$14.75</td><td>258</td><td>$535K</td><td>$460K</td><td class="mid">$75K</td><td class="mid">14%</td><td style="text-align:left"><span class="rag rag-a"></span>Ramp</td></tr>
+    <tr><td><strong>GH US</strong></td><td>Springfield</td><td>$35.00</td><td>175</td><td>$507K</td><td>$431K</td><td class="mid">$76K</td><td class="mid">15%</td><td style="text-align:left"><span class="rag rag-a"></span>Ramp</td></tr>
+    <tr><td><strong>GH Overall</strong></td><td>All</td><td>—</td><td>433</td><td>$1,042K</td><td>$891K</td><td class="mid">$151K</td><td class="mid">15%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr style="border-top:2px solid #d8d6d0"><td><strong>Almedia</strong></td><td>Lagos</td><td>$10.25</td><td>127</td><td>$126K</td><td>$69K</td><td class="hi">$57K</td><td class="hi">45%</td><td style="text-align:left"><span class="rag rag-g"></span>Healthy</td></tr>
+    <tr><td><strong>Outschool</strong></td><td>Lagos</td><td>$12.50</td><td>83</td><td>$95K</td><td>$55K</td><td class="hi">$40K</td><td class="hi">42%</td><td style="text-align:left"><span class="rag rag-g"></span>Healthy</td></tr>
+    <tr><td><strong>Aurora</strong></td><td>Lagos</td><td>$12.50</td><td>55</td><td>$40K</td><td>$18K</td><td class="hi">$22K</td><td class="hi">56%</td><td style="text-align:left"><span class="rag rag-g"></span>Healthy</td></tr>
+    <tr><td><strong>Faire</strong></td><td>Lagos</td><td>$12.50</td><td>40</td><td>$87K</td><td>$28K</td><td class="hi">$59K</td><td class="hi">68%</td><td style="text-align:left"><span class="rag rag-g"></span>Best margin</td></tr>
+    <tr><td><strong>Curri</strong></td><td>Lagos+SA</td><td>$12.50</td><td>31</td><td>$25K</td><td>$18K</td><td class="hi">$7K</td><td>28%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr><td><strong>CSI</strong></td><td>SA</td><td>$16.00</td><td>16</td><td>$30K</td><td>$21K</td><td>$9K</td><td>30%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr><td><strong>Finix</strong></td><td>Lagos</td><td>$12.50</td><td>17</td><td>$37K</td><td>$22K</td><td class="hi">$15K</td><td class="hi">41%</td><td style="text-align:left"><span class="rag rag-g"></span></td></tr>
+    <tr><td>Rest of CX (14 accts)</td><td>Lagos</td><td>$12.50</td><td>45</td><td>$97K</td><td>$68K</td><td>$29K</td><td>30%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr class="tot"><td><strong>CX Total</strong></td><td></td><td></td><td><strong>812</strong></td><td><strong>$1,467K</strong></td><td><strong>$1,067K</strong></td><td><strong>$400K</strong></td><td><strong>27%</strong></td><td></td></tr>
+  </table>
+</div>
+
+<div class="g2">
+  <div class="ccard">
+    <div class="ctitle">Client GM% — Feb 2026</div>
+    <div class="csub">% shown on bars · Ordered by # of agents (client size)</div>
+    <div class="ch"><canvas id="c-cgm"></canvas></div>
+    <div class="csub" style="margin-top:4px;font-family:'DM Mono',monospace;">Agents: GH 433 · Almedia 127 · Outschool 83 · Aurora 55 · Faire 40 · CSI 16 · Rest 58</div>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">Cost / Billable Agent by Market — Feb</div>
+    <div class="csub">USD per agent · Actual vs Target · Numbers shown on bars</div>
+    <div class="ch"><canvas id="c-cost-mkt"></canvas></div>
+  </div>
+</div>
+
+<div class="sec">Billable Mix</div>
+<div class="krow" style="grid-template-columns:repeat(4,1fr);">
+  <div class="kcard" style="--kc:#333"><div class="klbl">Total HC</div><div class="kval">887</div></div>
+  <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Billable</div><div class="kval">812</div><div class="ksub">92%</div></div>
+  <div class="kcard" style="--kc:#b45309"><div class="klbl">Non-Billable</div><div class="kval">75</div><div class="ksub">8%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Buffer %</div><div class="kval">10.7%</div></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 3: MARKET VIEW -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-market">
+<div class="callout dark"><strong>Goal:</strong> Is US viable? Market P&L + agent distribution. <strong>P1</strong> · Taire + Finance</div>
+
+<div class="krow" style="grid-template-columns:repeat(3,1fr);">
+  <div class="kcard" style="--kc:#0a7c4e"><div class="klbl"><span class="rag rag-g"></span>Lagos</div><div class="kval">~45% GM</div><div class="ksub">435 agents (54%)</div></div>
+  <div class="kcard" style="--kc:#b91c1c"><div class="klbl"><span class="rag rag-a"></span>Springfield</div><div class="kval">28%/40%</div><div class="ksub">185 agents (23%)</div></div>
+  <div class="kcard" style="--kc:#b45309"><div class="klbl"><span class="rag rag-a"></span>South Africa</div><div class="kval">~30% GM</div><div class="ksub">191 agents (24%)</div></div>
+</div>
+
+<div class="ccard">
+  <div class="ctitle">P&L by Market — Feb 2026</div>
+  <table class="dtbl">
+    <tr><th style="text-align:left">Market</th><th>Agents</th><th>% of Total</th><th>Revenue</th><th>COS</th><th>Gross Margin</th><th>GM%</th><th>Cost/Agent</th></tr>
+    <tr><td><strong>Lagos</strong></td><td>435</td><td>54%</td><td>$830K</td><td>$457K</td><td class="hi">$373K</td><td class="hi">45%</td><td>$581</td></tr>
+    <tr><td><strong>South Africa</strong></td><td>191</td><td>24%</td><td>$332K</td><td>$254K</td><td class="mid">$78K</td><td class="mid">24%</td><td>$1,329</td></tr>
+    <tr><td><strong>Springfield (US)</strong></td><td>185</td><td>23%</td><td>$507K</td><td>$431K</td><td class="mid">$76K</td><td class="mid">15%</td><td>$3,493</td></tr>
+    <tr class="tot"><td><strong>Total</strong></td><td><strong>811</strong></td><td>100%</td><td><strong>$1,669K</strong></td><td><strong>$1,142K</strong></td><td><strong>$527K</strong></td><td><strong>32%</strong></td><td>$1,408</td></tr>
+  </table>
+</div>
+
+<div class="g2">
+  <div class="ccard"><div class="ctitle">Agents by Market</div><div class="csub"># of agents and % share</div><div class="ch ch-sm"><canvas id="c-mkt-agents"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">FX Tracker</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">Rate</th><th>Jan</th><th>Feb</th><th>Δ</th><th style="text-align:left">Impact</th></tr>
+      <tr><td>NGN/USD</td><td>1,458</td><td>1,458</td><td>Flat</td><td style="text-align:left">Neutral</td></tr>
+      <tr><td>ZAR/USD</td><td>16.27</td><td>16.00</td><td class="lo">-1.7%</td><td style="text-align:left">SA costs up slightly</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 4: STAFFING -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-staffing">
+<div class="callout dark"><strong>Goal:</strong> Where over/understaffed? Top 10 + attention list. <strong>P0</strong> · Taire + PMs</div>
+
+<div class="sec">Top 10 CX Accounts</div>
+<div class="ccard">
+  <div style="overflow-x:auto">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Account</th><th>Mkt</th><th>Billable</th><th>Actual</th><th>Buffer</th><th>Buf%</th><th>Agents</th><th>QA</th><th>TL/ATL</th></tr>
+    <tr><td><strong>Almedia</strong></td><td>Lagos</td><td>111</td><td>120</td><td>10</td><td class="hi">8%</td><td>98/107</td><td>5/5</td><td>—</td></tr>
+    <tr><td><strong>Outschool</strong></td><td>Lagos</td><td>76</td><td>85</td><td>9</td><td class="mid">12%</td><td>62/62</td><td>6/4</td><td>—/6</td></tr>
+    <tr><td><strong>Aurora</strong></td><td>Lagos</td><td>55</td><td>55</td><td>0</td><td class="hi">0%</td><td>45/45</td><td>6/6</td><td>—</td></tr>
+    <tr><td><strong>Faire</strong></td><td>Lagos</td><td>34</td><td>40</td><td>6</td><td class="mid">18%</td><td>25/28</td><td>4/6</td><td>—</td></tr>
+    <tr><td><strong>CSI</strong></td><td>SA</td><td>30</td><td>16</td><td class="lo">-14</td><td class="lo">-47%</td><td>28/13</td><td>—/1</td><td>—</td></tr>
+    <tr><td><strong>Curri</strong></td><td>Lag+SA</td><td>25</td><td>31</td><td>6</td><td class="mid">24%</td><td>23/26</td><td>2/3</td><td>—/1</td></tr>
+    <tr><td><strong>Finix</strong></td><td>Lagos</td><td>15</td><td>17</td><td>2</td><td>13%</td><td>13/15</td><td>1/1</td><td>—</td></tr>
+    <tr><td><strong>Bask & Lather</strong></td><td>Lagos</td><td>12</td><td>14</td><td>2</td><td>17%</td><td>12/12</td><td>—/1</td><td>—</td></tr>
+    <tr><td><strong>Sonovate</strong></td><td>Lagos</td><td>7</td><td>10</td><td>3</td><td class="lo">43%</td><td>5/8</td><td>1/1</td><td>—</td></tr>
+    <tr><td><strong>Stream Hatchet</strong></td><td>Lagos</td><td>7</td><td>11</td><td>4</td><td class="lo">57%</td><td>6/8</td><td>1/1</td><td>—/1</td></tr>
+  </table>
+  </div>
+</div>
+
+<div class="callout red"><strong>⚠ Accounts Needing Attention (buffer >30% or understaffed):</strong></div>
+<div class="ccard">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Account</th><th>Billable</th><th>Actual</th><th>Buffer%</th><th style="text-align:left">Issue</th></tr>
+    <tr class="bg-r"><td><strong>Backroads</strong></td><td>4</td><td>11</td><td class="lo">175%</td><td style="text-align:left">7 buffers on 4 billable — structurally unprofitable</td></tr>
+    <tr class="bg-r"><td><strong>Stream Hatchet</strong></td><td>7</td><td>11</td><td class="lo">57%</td><td style="text-align:left">4 excess heads</td></tr>
+    <tr class="bg-r"><td><strong>Sonovate</strong></td><td>7</td><td>10</td><td class="lo">43%</td><td style="text-align:left">3 excess heads</td></tr>
+    <tr class="bg-r"><td><strong>CSI</strong></td><td>30</td><td>16</td><td class="lo">-47%</td><td style="text-align:left">Understaffed by 14 — client scaling down?</td></tr>
+    <tr class="bg-a"><td><strong>Outschool BO</strong></td><td>15</td><td>21</td><td class="mid">40%</td><td style="text-align:left">6 buffers on back office</td></tr>
+  </table>
+</div>
+
+<div class="sec">GiftHealth — By Program</div>
+<div class="ccard">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Program</th><th>Loc</th><th>Billable</th><th>Actual</th><th>Buffer</th><th>Buf%</th><th style="text-align:left">Status</th></tr>
+    <tr><td>Gastro</td><td>SA</td><td>45</td><td>43</td><td class="lo">-2</td><td>-4%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr><td>Lilly SA</td><td>JHB+CPT</td><td>85</td><td>118</td><td>33</td><td class="mid">39%</td><td style="text-align:left"><span class="rag rag-a"></span>Training</td></tr>
+    <tr class="bg-r"><td>Lilly MO</td><td>Springfield</td><td>175</td><td>130</td><td class="lo">-45</td><td class="lo">-26%</td><td style="text-align:left"><span class="rag rag-r"></span>Attrition critical</td></tr>
+    <tr><td>Lilly Lagos</td><td>Lagos</td><td>85</td><td>128</td><td>43</td><td class="mid">51%</td><td style="text-align:left"><span class="rag rag-a"></span>W2 ramp</td></tr>
+    <tr class="tot"><td><strong>GH Total</strong></td><td></td><td>402</td><td>433</td><td>31</td><td>8%</td><td></td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 5: P&L FORECAST -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-forecast">
+<div class="callout dark"><strong>Goal:</strong> Where will this month end? Weekly mark-to-market. <strong>P0 IMMEDIATE</strong> · Simone + Taire</div>
+<div style="background:#fff;border:1px solid #d8d6d0;padding:8px 14px;margin-bottom:11px;display:flex;justify-content:space-between;">
+  <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">STATUS</span><br><strong style="font-family:'DM Mono',monospace;font-size:12px;">Last updated: Apr 8 · Wk 1</strong></div>
+  <div style="text-align:right"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">WoW Δ</span><br><span style="font-family:'DM Mono',monospace;font-size:12px;color:#888;">First entry — no comparison</span></div>
+</div>
+
+<div class="callout blue"><strong>Per-project forecast:</strong> For each project, enter billable HC, buffer HC, OT hours, and toggle whether growth is expected. Use "Apply historicals" to auto-fill pricing and cost assumptions from Feb actuals, or override manually. Detailed input form coming in Omni build — below is the summary model.</div>
+
+<div class="g2">
+  <div class="ccard" style="max-height:500px;overflow-y:auto">
+    <div class="ctitle">April Forecast Inputs</div>
+    <div class="sec" style="margin-top:4px">GH Africa</div>
+    <div class="ctrl"><label>Billable HC</label><input type="number" id="fc-gha-hc" value="258" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>Buffer HC</label><input type="number" id="fc-gha-buf" value="30" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>Rate $/hr (avg)</label><input type="number" id="fc-gha-rate" value="14.10" step="0.1" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>COS %</label><input type="number" id="fc-gha-cos" value="78" onchange="fcCalc()"></div>
+    <div class="ctrl"><label><input type="checkbox" id="fc-gha-grow"> Growth expected (+HC)</label></div>
+    <div class="sec">GH US</div>
+    <div class="ctrl"><label>Billable HC</label><input type="number" id="fc-ghu-hc" value="175" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>Buffer HC</label><input type="number" id="fc-ghu-buf" value="0" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>Rate $/hr</label><input type="number" id="fc-ghu-rate" value="35" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>COS %</label><input type="number" id="fc-ghu-cos" value="72" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>Attrition % (monthly)</label><input type="number" id="fc-ghu-att" value="8" onchange="fcCalc()"></div>
+    <div class="sec">Other CX</div>
+    <div class="ctrl"><label>Billable HC</label><input type="number" id="fc-ox-hc" value="410" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>Avg Rate $/hr</label><input type="number" id="fc-ox-rate" value="12.10" step="0.1" onchange="fcCalc()"></div>
+    <div class="ctrl"><label>COS %</label><input type="number" id="fc-ox-cos" value="55" onchange="fcCalc()"></div>
+    <div class="sec">Cost Assumptions</div>
+    <div class="ctrl"><label>OpEx ($/mo)</label><input type="number" id="fc-opex" value="370000" onchange="fcCalc()"></div>
+    <div class="ctrl"><label><input type="checkbox" id="fc-material"> Material cost changes?</label></div>
+    <div class="ctrl"><label>One-time costs ($)</label><input type="number" id="fc-onetime" value="0" onchange="fcCalc()"></div>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">April 2026 — Weekly Forecast</div>
+    <div class="krow" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px;">
+      <div class="kcard" style="--kc:#1a56db"><div class="klbl">Revenue</div><div class="kval" id="fo-rev">—</div></div>
+      <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Gross Profit</div><div class="kval" id="fo-gp">—</div></div>
+      <div class="kcard" style="--kc:#333"><div class="klbl">EBITDA</div><div class="kval" id="fo-eb">—</div></div>
+    </div>
+    <div id="fo-detail"></div>
+    <div class="ch" style="margin-top:8px"><canvas id="c-fc-weekly"></canvas></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 6: RAMP ECONOMICS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-ramp">
+<div class="callout dark"><strong>Goal:</strong> Track new program ramp. Select a project to model. <strong>P1</strong></div>
+
+<div class="sec">Select Project</div>
+<div class="ctrl"><label>Project</label>
+  <select id="ramp-sel" onchange="renderRamp()" style="font-size:13px;padding:6px;">
+    <option value="gh-sa">GiftHealth SA (Lilly — Dec 2024)</option>
+    <option value="gh-us">GiftHealth US (Springfield — Jan 2026)</option>
+    <option value="gh-lagos">GiftHealth Lagos (Feb 2026)</option>
+    <option value="9am">9am Health (Mar 2026)</option>
+    <option value="almedia-ai">Almedia Agentic (Mar 2026)</option>
+  </select>
+</div>
+
+<div id="ramp-content">
+  <div class="g2">
+    <div class="ccard"><div class="ctitle">Monthly Cost Stack</div><div class="csub">One-time (red) vs recurring (blue). Shows normalization.</div><div class="ch ch-lg"><canvas id="c-ramp-stack"></canvas></div></div>
+    <div class="ccard"><div class="ctitle">Gross Margin % Curve</div><div class="csub">Ramp → steady state</div><div class="ch ch-lg"><canvas id="c-ramp-gm"></canvas></div></div>
+  </div>
+  <div class="krow" style="grid-template-columns:repeat(4,1fr);">
+    <div class="kcard" style="--kc:#1a56db"><div class="klbl">Break-Even</div><div class="kval" id="r-be">Mo 5</div></div>
+    <div class="kcard" style="--kc:#333"><div class="klbl">3-Mo Cumul P&L</div><div class="kval" id="r-3m">—</div></div>
+    <div class="kcard" style="--kc:#333"><div class="klbl">6-Mo Cumul P&L</div><div class="kval" id="r-6m">—</div></div>
+    <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">12-Mo Cumul P&L</div><div class="kval" id="r-12m">—</div></div>
+  </div>
+  <div id="ramp-table"></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 7: INPUTS & TARGETS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-inputs">
+<div class="callout dark"><strong>Configuration:</strong> Set targets, pricing, and assumptions. Changes here update all dashboard views.</div>
+
+<div class="g2">
+  <div class="ccard">
+    <div class="ctitle">KPI Targets</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">KPI</th><th>Current Target</th><th style="text-align:left">Notes</th></tr>
+      <tr><td>CX Revenue (Dec run rate)</td><td>$2.17M/mo ($26M)</td><td style="text-align:left">Growth: Q1 15%, Q2 25%, Q3 35%, Q4 25%</td></tr>
+      <tr><td>CX EBITDA</td><td>7%+ margin</td><td style="text-align:left">~$120K/mo at scale</td></tr>
+      <tr><td>Cost/Agent NG</td><td>$550</td><td style="text-align:left">Constant</td></tr>
+      <tr><td>Cost/Agent SA</td><td>$1,100 (Q2) → $950 (Q3) → $700 (Q1 27)</td><td style="text-align:left">Glide path</td></tr>
+      <tr><td>Cost/Agent US</td><td>$3,200</td><td style="text-align:left">Consolidated parent view</td></tr>
+      <tr><td>Budget Adherence</td><td>19%</td><td style="text-align:left">OpEx as % of GR</td></tr>
+      <tr><td>Rev Concentration</td><td>&lt;55%</td><td style="text-align:left">GH share of CX</td></tr>
+      <tr><td>US Attrition</td><td>&lt;15%</td><td style="text-align:left">3-month trailing</td></tr>
+    </table>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">Pricing by Account</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">Account</th><th>Market</th><th>Rate $/hr</th><th style="text-align:left">Last COLA</th></tr>
+      <tr><td>GiftHealth (Lagos)</td><td>Lagos</td><td>$13.85</td><td style="text-align:left">Feb 2026 (new ladder)</td></tr>
+      <tr><td>GiftHealth (SA)</td><td>SA</td><td>$14.75</td><td style="text-align:left">Feb 2026</td></tr>
+      <tr><td>GiftHealth (US)</td><td>US</td><td>$35.00</td><td style="text-align:left">n/a</td></tr>
+      <tr><td>Almedia</td><td>Lagos</td><td>$10.25</td><td style="text-align:left;color:#b91c1c">None since 2024</td></tr>
+      <tr><td>All other Lagos</td><td>Lagos</td><td>$12.50</td><td style="text-align:left">Various</td></tr>
+      <tr><td>CSI</td><td>SA</td><td>$16.00</td><td style="text-align:left;color:#b91c1c">None since 2024</td></tr>
+      <tr><td>Kings of Neon</td><td>SA</td><td>$14.75</td><td style="text-align:left">N/A</td></tr>
+      <tr><td>Curri (SA portion)</td><td>SA</td><td>$14.75</td><td style="text-align:left;color:#b91c1c">None since 2024</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="ccard">
+  <div class="ctitle">SA Cost/Agent Target Trajectory</div>
+  <table class="dtbl">
+    <tr><th style="text-align:left">Period</th><th>Target</th><th>Key Levers</th></tr>
+    <tr><td>Feb 2026 (actual)</td><td class="lo">$1,329</td><td style="text-align:left">Current state</td></tr>
+    <tr><td>Q2 2026</td><td class="mid">$1,100</td><td style="text-align:left">Innovocurve exit, EOR elimination (-$135)</td></tr>
+    <tr><td>Q3 2026</td><td class="mid">$950</td><td style="text-align:left">Transport optimization, scale efficiencies</td></tr>
+    <tr><td>Q4 2026</td><td>$800</td><td style="text-align:left">Tier 2 location (East London)</td></tr>
+    <tr><td>Q1 2027</td><td class="hi">$700</td><td style="text-align:left">Marginal cost at scale</td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+function go(id){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('act');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('act');});
+  document.getElementById('p-'+id).classList.add('act');
+  var m={core:0,costclient:1,market:2,staffing:3,forecast:4,ramp:5,inputs:6};
+  if(m[id]!==undefined)document.querySelectorAll('.tab')[m[id]].classList.add('act');
+  setTimeout(renderCharts,80);
+}
+
+Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.font.size=10;
+var CHS={};var MF={family:"'DM Mono',monospace",size:9};var GC='#e8e6e0';
+var DL={display:true,color:'#0f172a',font:{family:"'DM Mono',monospace",size:9,weight:500},anchor:'end',align:'end'};
+var DL_PCT={...DL,formatter:function(v){return v+'%';}};
+var DL_USD={...DL,formatter:function(v){return '$'+v;}};
+var DL_K={...DL,formatter:function(v){return '$'+v+'K';}};
+var DL_NONE={display:false};
+
+function mk(id,type,data,opts){var c=document.getElementById(id);if(!c)return;if(CHS[id])CHS[id].destroy();CHS[id]=new Chart(c.getContext('2d'),{type:type,data:data,options:{responsive:true,maintainAspectRatio:false,animation:{duration:120},plugins:{legend:{labels:{color:'#888',font:MF,boxWidth:8,padding:6},position:'bottom'},tooltip:{backgroundColor:'#0f172a',titleColor:'#fff',bodyColor:'#cbd5e1',bodyFont:MF},datalabels:DL_NONE},scales:type==='pie'||type==='doughnut'?{}:{x:{grid:{color:GC},ticks:{color:'#888',font:MF}},y:{grid:{color:GC},ticks:{color:'#888',font:MF}}},...opts}});}
+
+function renderCharts(){
+  // Revenue trajectory
+  mk('c-rev-traj','line',{labels:['Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[
+    {label:'Target',data:[1.57,1.66,1.71,1.76,1.81,1.88,1.95,2.02,2.07,2.12,2.17],borderColor:'#1a56db',backgroundColor:'rgba(26,86,219,.08)',fill:true,tension:.3,pointRadius:3,borderWidth:2},
+    {label:'Actual',data:[1.57],borderColor:'#0a7c4e',pointRadius:5,pointBackgroundColor:'#0a7c4e',borderWidth:2,spanGaps:false}
+  ]},{scales:{y:{ticks:{callback:function(v){return '$'+v.toFixed(1)+'M';}},min:1.4,max:2.3}},plugins:{datalabels:DL_NONE}});
+
+  // Cost vs target with labels
+  mk('c-cost-tgt','bar',{labels:['Nigeria','SA','US (Parent)'],datasets:[
+    {label:'Actual',data:[581,1329,3493],backgroundColor:['#b45309','#b91c1c','#b45309']},
+    {label:'Target',data:[550,1100,3200],backgroundColor:['#0a7c4e','#0a7c4e','#0a7c4e']}
+  ]},{scales:{y:{ticks:{callback:function(v){return '$'+v;}}}},plugins:{datalabels:{display:true,color:'#fff',font:{family:"'DM Mono',monospace",size:10,weight:700},formatter:function(v){return '$'+v;}}}});
+
+  // Revenue mix with labels
+  mk('c-mix','doughnut',{labels:['GH ($954K)','Almedia ($126K)','Outschool ($95K)','Faire ($87K)','Aurora ($40K)','Rest ($268K)'],
+    datasets:[{data:[954,126,95,87,40,268],backgroundColor:['#1a56db','#0a7c4e','#6d28d9','#b45309','#be185d','#cbd5e1'],borderWidth:0}]
+  },{plugins:{legend:{position:'right',labels:{font:{size:9}}},datalabels:{display:true,color:'#fff',font:{size:9,weight:700,family:"'DM Mono',monospace"},formatter:function(v,ctx){var t=ctx.chart.data.datasets[0].data.reduce(function(a,b){return a+b;},0);return Math.round(v/t*100)+'%';}}}});
+
+  // HC mix with labels
+  mk('c-hc-mix','doughnut',{labels:['GH (433)','Almedia (127)','Outschool (83)','Aurora (55)','Faire (40)','Rest (74)'],
+    datasets:[{data:[433,127,83,55,40,74],backgroundColor:['#1a56db','#0a7c4e','#6d28d9','#b45309','#be185d','#cbd5e1'],borderWidth:0}]
+  },{plugins:{legend:{position:'right',labels:{font:{size:9}}},datalabels:{display:true,color:'#fff',font:{size:9,weight:700,family:"'DM Mono',monospace"},formatter:function(v,ctx){var t=ctx.chart.data.datasets[0].data.reduce(function(a,b){return a+b;},0);return Math.round(v/t*100)+'%';}}}});
+
+  // Geo mix
+  mk('c-geo-mix','doughnut',{labels:['Lagos (435, 54%)','SA (191, 24%)','US (185, 23%)'],
+    datasets:[{data:[435,191,185],backgroundColor:['#1a56db','#b45309','#0a7c4e'],borderWidth:0}]
+  },{plugins:{legend:{position:'right',labels:{font:{size:9}}},datalabels:{display:true,color:'#fff',font:{size:10,weight:700,family:"'DM Mono',monospace"},formatter:function(v){return v;}}}});
+
+  // Client GM% ordered by size
+  mk('c-cgm','bar',{labels:['GH Overall','Almedia','Outschool','Aurora','Faire','CSI','Rest'],datasets:[
+    {label:'GM%',data:[15,45,42,56,68,30,30],backgroundColor:['#b91c1c','#0a7c4e','#0a7c4e','#0a7c4e','#0a7c4e','#b45309','#b45309']}
+  ]},{plugins:{legend:{display:false},datalabels:DL_PCT},scales:{y:{ticks:{callback:function(v){return v+'%';}}}}});
+
+  // Cost by market
+  mk('c-cost-mkt','bar',{labels:['Nigeria','SA','US (Parent)','US (GMC)'],datasets:[
+    {label:'Jan',data:[640,1409,0,7420],backgroundColor:'#d8d6d0'},
+    {label:'Feb',data:[581,1329,3493,5881],backgroundColor:'#1a56db'}
+  ]},{scales:{y:{ticks:{callback:function(v){return '$'+v;}}}},plugins:{datalabels:{display:true,color:'#0f172a',font:{family:"'DM Mono',monospace",size:9},formatter:function(v){return v?'$'+v:'';}}}});
+
+  // Market agents
+  mk('c-mkt-agents','bar',{labels:['Lagos','South Africa','Springfield'],datasets:[
+    {label:'Agents',data:[435,191,185],backgroundColor:['#1a56db','#b45309','#0a7c4e']}
+  ]},{indexAxis:'y',plugins:{datalabels:{display:true,color:'#fff',font:{size:11,weight:700,family:"'DM Mono',monospace"},formatter:function(v){return v+' ('+Math.round(v/811*100)+'%)';}}},scales:{x:{display:false}}});
+
+  renderRamp();
+}
+
+// Ramp economics
+var RAMP_DATA={
+  'gh-sa':{name:'GH SA Lilly',months:['Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
+    onetime:[213,0,0,0,0,0,0,0,0,0,0,0],travel:[11,11,11,11,6,0,0,0,0,0,0,0],buffer:[16,16,10,3,0,0,0,0,0,0,0,0],
+    payroll:[104,104,104,104,104,100,100,100,100,100,100,100],dep:[3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5],
+    rev:[94,191,191,191,191,191,191,191,191,191,191,191],be:'Mo 5'},
+  'gh-us':{name:'GH US Springfield',months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    onetime:[50,0,0,0,0,0,0,0,0,0,0,0],travel:[5,5,5,3,0,0,0,0,0,0,0,0],buffer:[0,0,0,0,0,0,0,0,0,0,0,0],
+    payroll:[148,375,420,450,450,450,450,450,450,450,450,450],dep:[12,12,12,12,12,12,12,12,12,12,12,12],
+    rev:[203,507,600,640,650,650,650,650,650,650,650,650],be:'Mo 1'},
+  'gh-lagos':{name:'GH Lagos Lilly',months:['Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan27'],
+    onetime:[85,0,0,0,0,0,0,0,0,0,0,0],travel:[8,8,4,0,0,0,0,0,0,0,0,0],buffer:[12,12,6,0,0,0,0,0,0,0,0,0],
+    payroll:[55,55,50,48,48,48,48,48,48,48,48,48],dep:[2,2,2,2,2,2,2,2,2,2,2,2],
+    rev:[40,120,180,200,200,200,200,200,200,200,200,200],be:'Mo 3'},
+  '9am':{name:'9am Health',months:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan27','Feb27'],
+    onetime:[30,0,0,0,0,0,0,0,0,0,0,0],travel:[3,3,0,0,0,0,0,0,0,0,0,0],buffer:[0,0,0,0,0,0,0,0,0,0,0,0],
+    payroll:[45,90,120,130,130,130,130,130,130,130,130,130],dep:[2,2,2,2,2,2,2,2,2,2,2,2],
+    rev:[0,60,120,150,160,160,160,160,160,160,160,160],be:'Mo 5'},
+  'almedia-ai':{name:'Almedia Agentic',months:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan27','Feb27'],
+    onetime:[15,0,0,0,0,0,0,0,0,0,0,0],travel:[0,0,0,0,0,0,0,0,0,0,0,0],buffer:[0,0,0,0,0,0,0,0,0,0,0,0],
+    payroll:[8,15,20,25,25,25,25,25,25,25,25,25],dep:[0,0,0,0,0,0,0,0,0,0,0,0],
+    rev:[5,30,50,60,60,60,60,60,60,60,60,60],be:'Mo 3'}
+};
+
+function renderRamp(){
+  var sel=document.getElementById('ramp-sel').value;
+  var d=RAMP_DATA[sel];if(!d)return;
+  document.getElementById('r-be').textContent=d.be;
+  var cum=0,c3=0,c6=0,c12=0;
+  var gm_pct=[];
+  for(var i=0;i<12;i++){
+    var cost=d.onetime[i]+d.travel[i]+d.buffer[i]+d.payroll[i]+d.dep[i];
+    var pl=d.rev[i]-cost;cum+=pl;
+    if(i===2)c3=cum;if(i===5)c6=cum;if(i===11)c12=cum;
+    gm_pct.push(d.rev[i]>0?Math.round((d.rev[i]-cost)/d.rev[i]*100):-999);
+  }
+  document.getElementById('r-3m').textContent=(c3>=0?'$':'−$')+Math.abs(Math.round(c3))+'K';
+  document.getElementById('r-6m').textContent=(c6>=0?'$':'−$')+Math.abs(Math.round(c6))+'K';
+  document.getElementById('r-12m').textContent=(c12>=0?'$':'−$')+Math.abs(Math.round(c12))+'K';
+
+  mk('c-ramp-stack','bar',{labels:d.months,datasets:[
+    {label:'One-Time',data:d.onetime,backgroundColor:'#b91c1c'},
+    {label:'Travel',data:d.travel,backgroundColor:'#b45309'},
+    {label:'Buffer',data:d.buffer,backgroundColor:'#6d28d9'},
+    {label:'Payroll',data:d.payroll,backgroundColor:'#1a56db'},
+    {label:'Depreciation',data:d.dep,backgroundColor:'#94a3b8'}
+  ]},{plugins:{datalabels:DL_NONE},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:function(v){return '$'+v+'K';}}}}});
+
+  var gm_clean=gm_pct.map(function(v){return v===-999?null:v;});
+  mk('c-ramp-gm','line',{labels:d.months,datasets:[
+    {label:'GM%',data:gm_clean,borderColor:'#1a56db',tension:.3,pointRadius:4,fill:true,backgroundColor:'rgba(26,86,219,.06)',spanGaps:true},
+    {label:'Target',data:Array(12).fill(43),borderColor:'#0a7c4e',borderDash:[4,4],pointRadius:0}
+  ]},{scales:{y:{ticks:{callback:function(v){return v+'%';}},min:-50,max:60}},plugins:{datalabels:{display:true,color:'#0f172a',font:{family:"'DM Mono',monospace",size:9},formatter:function(v){return v!==null?v+'%':'';},align:'top'}}});
+}
+
+// Forecast
+function fcCalc(){
+  var hrs=173;
+  var ghaR=+document.getElementById('fc-gha-hc').value*hrs*(+document.getElementById('fc-gha-rate').value);
+  var ghuR=+document.getElementById('fc-ghu-hc').value*hrs*(+document.getElementById('fc-ghu-rate').value);
+  var oxR=+document.getElementById('fc-ox-hc').value*hrs*(+document.getElementById('fc-ox-rate').value);
+  var tot=ghaR+ghuR+oxR;
+  var ghaC=ghaR*(+document.getElementById('fc-gha-cos').value/100);
+  var ghuC=ghuR*(+document.getElementById('fc-ghu-cos').value/100);
+  var oxC=oxR*(+document.getElementById('fc-ox-cos').value/100);
+  var gp=tot-ghaC-ghuC-oxC;
+  var opex=+document.getElementById('fc-opex').value;
+  var onetime=+document.getElementById('fc-onetime').value;
+  var eb=gp-opex-onetime+12000;
+
+  document.getElementById('fo-rev').textContent='$'+(tot/1e6).toFixed(2)+'M';
+  document.getElementById('fo-gp').textContent='$'+(gp/1e3).toFixed(0)+'K ('+(gp/tot*100).toFixed(0)+'%)';
+  document.getElementById('fo-eb').textContent='$'+(eb/1e3).toFixed(0)+'K';
+
+  // Weekly view
+  var wkRev=tot/4.33;
+  mk('c-fc-weekly','bar',{labels:['Wk1','Wk2','Wk3','Wk4','Wk5 (partial)'],datasets:[
+    {label:'Revenue ($K)',data:[wkRev/1e3,wkRev/1e3,wkRev/1e3,wkRev/1e3,wkRev/1e3*0.6].map(function(v){return Math.round(v);}),backgroundColor:'#1a56db'},
+    {label:'COS ($K)',data:[(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3*0.6].map(function(v){return Math.round(v);}),backgroundColor:'#cbd5e1'}
+  ]},{plugins:{datalabels:{display:true,color:'#0f172a',font:{size:9,family:"'DM Mono',monospace"},formatter:function(v){return '$'+v+'K';}}},scales:{y:{ticks:{callback:function(v){return '$'+v+'K';}}}}});
+
+  document.getElementById('fo-detail').innerHTML='<table class="dtbl"><tr><th style="text-align:left">Segment</th><th>HC</th><th>Rate</th><th>Rev</th><th>COS%</th><th>GP</th><th>GP%</th></tr>'+
+    '<tr><td>GH Africa</td><td>'+document.getElementById('fc-gha-hc').value+'</td><td>$'+document.getElementById('fc-gha-rate').value+'</td><td>$'+(ghaR/1e3).toFixed(0)+'K</td><td>'+document.getElementById('fc-gha-cos').value+'%</td><td>$'+((ghaR-ghaC)/1e3).toFixed(0)+'K</td><td>'+((1-ghaC/ghaR)*100).toFixed(0)+'%</td></tr>'+
+    '<tr><td>GH US</td><td>'+document.getElementById('fc-ghu-hc').value+'</td><td>$'+document.getElementById('fc-ghu-rate').value+'</td><td>$'+(ghuR/1e3).toFixed(0)+'K</td><td>'+document.getElementById('fc-ghu-cos').value+'%</td><td>$'+((ghuR-ghuC)/1e3).toFixed(0)+'K</td><td>'+((1-ghuC/ghuR)*100).toFixed(0)+'%</td></tr>'+
+    '<tr><td>Other CX</td><td>'+document.getElementById('fc-ox-hc').value+'</td><td>$'+document.getElementById('fc-ox-rate').value+'</td><td>$'+(oxR/1e3).toFixed(0)+'K</td><td>'+document.getElementById('fc-ox-cos').value+'%</td><td>$'+((oxR-oxC)/1e3).toFixed(0)+'K</td><td>'+((1-oxC/oxR)*100).toFixed(0)+'%</td></tr>'+
+    '<tr class="tot"><td><strong>Total</strong></td><td></td><td></td><td><strong>$'+(tot/1e3).toFixed(0)+'K</strong></td><td></td><td><strong>$'+(gp/1e3).toFixed(0)+'K</strong></td><td><strong>'+(gp/tot*100).toFixed(0)+'%</strong></td></tr></table>';
+}
+
+renderCharts();fcCalc();
+</script>
+</body>
+</html>

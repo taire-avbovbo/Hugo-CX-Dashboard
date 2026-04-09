@@ -535,6 +535,13 @@ function cpTogglePresence(on){
 <div class="pane" id="p-costclient">
 <div class="callout dark"><strong>Goal:</strong> Why is cost/agent moving? Which clients make money? <strong>P0+P1</strong> · Taire + Finance</div>
 
+<div class="krow" style="grid-template-columns:repeat(4,1fr);">
+  <div class="kcard" style="--kc:#333"><div class="klbl">Total HC</div><div class="kval">887</div></div>
+  <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Billable</div><div class="kval">812</div><div class="ksub">92%</div></div>
+  <div class="kcard" style="--kc:#b45309"><div class="klbl">Non-Billable</div><div class="kval">75</div><div class="ksub">8%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Buffer %</div><div class="kval">10.7%</div></div>
+</div>
+
 <div class="callout red" style="margin-bottom:11px"><strong>⚠ Accounts needing attention:</strong> Backroads (175% buffer — 7 buffers on 4 billable). Stream Hatchet (57% buffer). Sonovate (43% buffer). GH Lagos temporarily negative during W2 training. These require immediate staffing intervention.</div>
 
 <div class="sec">Client Profitability — Top 10 by Size + Attention List</div>
@@ -570,13 +577,6 @@ function cpTogglePresence(on){
   </div>
 </div>
 
-<div class="sec">Billable Mix</div>
-<div class="krow" style="grid-template-columns:repeat(4,1fr);">
-  <div class="kcard" style="--kc:#333"><div class="klbl">Total HC</div><div class="kval">887</div></div>
-  <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Billable</div><div class="kval">812</div><div class="ksub">92%</div></div>
-  <div class="kcard" style="--kc:#b45309"><div class="klbl">Non-Billable</div><div class="kval">75</div><div class="ksub">8%</div></div>
-  <div class="kcard" style="--kc:#333"><div class="klbl">Buffer %</div><div class="kval">10.7%</div></div>
-</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════ -->
@@ -704,7 +704,7 @@ function cpTogglePresence(on){
 <!-- CHARTS ROW -->
 <div class="g2">
   <div class="ccard"><div class="ctitle">Weekly Revenue / COS / GP</div><div class="csub">USD thousands per week</div><div class="ch"><canvas id="c-fc-weekly"></canvas></div></div>
-  <div class="ccard"><div class="ctitle">Revenue by Project</div><div class="csub">Monthly total (all weeks summed)</div><div class="ch"><canvas id="c-fc-byproj"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Revenue by Project</div><div class="csub">Monthly total (all weeks summed)</div><div class="ch ch-lg"><canvas id="c-fc-byproj"></canvas></div></div>
 </div>
 
 <!-- PROJECT CARDS -->
@@ -1108,15 +1108,15 @@ function fcRender(){
     {label:'Revenue',data:weekTotals.map(function(w){return Math.round(w.rev/1e3);}),backgroundColor:'#1a56db',yAxisID:'y'},
     {label:'COS',data:weekTotals.map(function(w){return Math.round(w.cos/1e3);}),backgroundColor:'#cbd5e1',yAxisID:'y'},
     {label:'GM%',data:wkGmPct,type:'line',borderColor:'#0a7c4e',backgroundColor:'rgba(10,124,78,.1)',pointRadius:5,pointBackgroundColor:'#0a7c4e',borderWidth:2,fill:false,yAxisID:'y1'}
-  ]},{plugins:{datalabels:{display:true,color:function(ctx){return ctx.datasetIndex===2?'#0a7c4e':'#0f172a';},font:{size:9,family:"'DM Mono',monospace",weight:function(ctx){return ctx.datasetIndex===2?700:500;}},formatter:function(v,ctx){return ctx.datasetIndex===2?v+'%':'$'+v+'K';},align:function(ctx){return ctx.datasetIndex===2?'top':'end';}}},scales:{y:{ticks:{callback:function(v){return '$'+v+'K';}},position:'left'},y1:{ticks:{callback:function(v){return v+'%';}},position:'right',grid:{drawOnChartArea:false},min:0,max:60}}});
+  ]},{plugins:{datalabels:{display:true,color:function(ctx){return ctx.datasetIndex===2?'#0a7c4e':'#0f172a';},font:{size:9,family:"'DM Mono',monospace",weight:function(ctx){return ctx.datasetIndex===2?700:500;}},formatter:function(v,ctx){return ctx.datasetIndex===2?v+'%':'$'+v+'K';},align:function(ctx){return ctx.datasetIndex===2?'top':'end';}}},scales:{y:{ticks:{callback:function(v){return '$'+v+'K';}},position:'left',suggestedMax:900},y1:{ticks:{callback:function(v){return v+'%';}},position:'right',grid:{drawOnChartArea:false},min:0,max:55}}});
 
   // By-project chart with MoM comparison
   var projLabels=[],projRevs=[],projPrev=[],projColors=[];
   FC_PROJECTS.forEach(function(pdef){var pm=projMonthly[pdef.id];projLabels.push(pdef.name);projRevs.push(Math.round(pm.rev/1e3));projPrev.push(pdef.prevRev||0);projColors.push(pdef.mktColor||'#1a56db');});
   mk('c-fc-byproj','bar',{labels:projLabels,datasets:[
-    {label:'Prior Month',data:projPrev,backgroundColor:'#d8d6d0'},
+    {label:'Prior Month',data:projPrev,backgroundColor:'#d8d6d0',datalabels:{display:false}},
     {label:'This Month Forecast',data:projRevs,backgroundColor:projColors}
-  ]},{indexAxis:'y',plugins:{datalabels:{display:true,font:{size:9,weight:700,family:"'DM Mono',monospace"},color:function(ctx){return ctx.datasetIndex===1?'#fff':'#888';},formatter:function(v,ctx){if(ctx.datasetIndex===0)return v?'$'+v+'K':'';var prev=projPrev[ctx.dataIndex];var delta=prev>0?Math.round((v-prev)/prev*100):0;var arrow=v>prev?'▲':v<prev?'▼':'';return '$'+v+'K'+(prev>0?' '+arrow+delta+'%':'');}}},scales:{x:{ticks:{callback:function(v){return '$'+v+'K';}}}}});
+  ]},{indexAxis:'y',plugins:{datalabels:{display:true,font:{size:10,weight:700,family:"'DM Mono',monospace"},color:'#fff',anchor:'end',align:'start',formatter:function(v,ctx){if(ctx.datasetIndex===0)return'';var prev=projPrev[ctx.dataIndex];if(!prev)return'$'+v+'K';var delta=Math.round((v-prev)/prev*100);return'$'+v+'K '+(delta>=0?'+':'')+delta+'%';}}},scales:{x:{ticks:{callback:function(v){return '$'+v+'K';}}},y:{ticks:{font:{size:11}}}}});
 
   // Project cards
   var ph=document.getElementById('fc-projects');

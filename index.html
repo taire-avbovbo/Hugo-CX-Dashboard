@@ -82,6 +82,29 @@ body{font-family:'DM Sans',sans-serif;background:#f5f5f0;color:#111;font-size:13
 .toggle{display:flex;gap:4px;margin-bottom:8px;}
 .toggle-btn{padding:5px 12px;font-family:'DM Mono',monospace;font-size:10px;border:1px solid #d8d6d0;background:#fff;cursor:pointer;color:#888;}
 .toggle-btn.on{background:#0f172a;color:#fff;border-color:#0f172a;}
+/* Forecast */
+.fc-card{background:#fff;border:1px solid #d8d6d0;margin-bottom:6px;overflow:hidden;}
+.fc-card-hd{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.fc-card-hd:hover{background:#fafaf8;}
+.fc-card-hd .fc-name{font-size:12px;font-weight:600;color:#0f172a;}
+.fc-card-hd .fc-mini{font-family:'DM Mono',monospace;font-size:10px;color:#888;display:flex;gap:12px;}
+.fc-card-bd{display:none;padding:0 14px 14px;border-top:1px solid #eee;}
+.fc-card.open .fc-card-bd{display:block;}
+.fc-card .fc-arrow{transition:transform .15s;font-size:10px;color:#888;}
+.fc-card.open .fc-arrow{transform:rotate(90deg);}
+.fc-wk-hdr{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:6px 8px;text-align:center;}
+.fc-wk-actual{background:#e6f4ee;color:#0a7c4e;}
+.fc-wk-forecast{background:#eef3fc;color:#1a56db;}
+.fc-inp{font-family:'DM Mono',monospace;font-size:11px;padding:3px 6px;border:1px solid #d8d6d0;width:72px;text-align:right;background:#fff;}
+.fc-inp:disabled{background:#f5f5f0;color:#888;border-color:#eee;}
+.fc-inp:focus{border-color:#1a56db;outline:none;}
+.fc-calc{font-family:'DM Mono',monospace;font-size:11px;color:#888;text-align:right;padding:3px 6px;}
+.fc-fixed-row{display:grid;grid-template-columns:120px repeat(4,1fr) 90px;gap:4px;align-items:center;margin-bottom:3px;}
+.fc-fixed-lbl{font-family:'DM Mono',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.06em;}
+.fc-set-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.fc-set-item label{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:2px;}
+.fc-set-item input{font-family:'DM Mono',monospace;font-size:11px;padding:3px 6px;border:1px solid #d8d6d0;width:100%;text-align:right;}
+.fc-monthly{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#0f172a;text-align:right;padding:3px 6px;}
 </style>
 </head>
 <body>
@@ -374,52 +397,58 @@ function signOut(){auth.signOut().then(()=>{document.getElementById('auth-screen
 </div>
 
 <!-- ═══════════════════════════════════════════════ -->
-<!-- TAB 5: P&L FORECAST -->
+<!-- TAB 5: P&L FORECAST (WEEKLY MARK-TO-MARKET) -->
 <!-- ═══════════════════════════════════════════════ -->
 <div class="pane" id="p-forecast">
-<div class="callout dark"><strong>Goal:</strong> Where will this month end? Weekly mark-to-market. <strong>P0 IMMEDIATE</strong> · Simone + Taire</div>
-<div style="background:#fff;border:1px solid #d8d6d0;padding:8px 14px;margin-bottom:11px;display:flex;justify-content:space-between;">
-  <div><span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">STATUS</span><br><strong style="font-family:'DM Mono',monospace;font-size:12px;">Last updated: Apr 8 · Wk 1</strong></div>
-  <div style="text-align:right"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">WoW Δ</span><br><span style="font-family:'DM Mono',monospace;font-size:12px;color:#888;">First entry — no comparison</span></div>
-</div>
+<div class="callout dark"><strong>Goal:</strong> Where will this month end? Weekly mark-to-market with persistence. <strong>P0 IMMEDIATE</strong> · Simone + Taire</div>
 
-<div class="callout blue"><strong>Per-project forecast:</strong> For each project, enter billable HC, buffer HC, OT hours, and toggle whether growth is expected. Use "Apply historicals" to auto-fill pricing and cost assumptions from Feb actuals, or override manually. Detailed input form coming in Omni build — below is the summary model.</div>
-
-<div class="g2">
-  <div class="ccard" style="max-height:500px;overflow-y:auto">
-    <div class="ctitle">April Forecast Inputs</div>
-    <div class="sec" style="margin-top:4px">GH Africa</div>
-    <div class="ctrl"><label>Billable HC</label><input type="number" id="fc-gha-hc" value="258" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>Buffer HC</label><input type="number" id="fc-gha-buf" value="30" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>Rate $/hr (avg)</label><input type="number" id="fc-gha-rate" value="14.10" step="0.1" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>COS %</label><input type="number" id="fc-gha-cos" value="78" onchange="fcCalc()"></div>
-    <div class="ctrl"><label><input type="checkbox" id="fc-gha-grow"> Growth expected (+HC)</label></div>
-    <div class="sec">GH US</div>
-    <div class="ctrl"><label>Billable HC</label><input type="number" id="fc-ghu-hc" value="175" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>Buffer HC</label><input type="number" id="fc-ghu-buf" value="0" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>Rate $/hr</label><input type="number" id="fc-ghu-rate" value="35" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>COS %</label><input type="number" id="fc-ghu-cos" value="72" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>Attrition % (monthly)</label><input type="number" id="fc-ghu-att" value="8" onchange="fcCalc()"></div>
-    <div class="sec">Other CX</div>
-    <div class="ctrl"><label>Billable HC</label><input type="number" id="fc-ox-hc" value="410" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>Avg Rate $/hr</label><input type="number" id="fc-ox-rate" value="12.10" step="0.1" onchange="fcCalc()"></div>
-    <div class="ctrl"><label>COS %</label><input type="number" id="fc-ox-cos" value="55" onchange="fcCalc()"></div>
-    <div class="sec">Cost Assumptions</div>
-    <div class="ctrl"><label>OpEx ($/mo)</label><input type="number" id="fc-opex" value="370000" onchange="fcCalc()"></div>
-    <div class="ctrl"><label><input type="checkbox" id="fc-material"> Material cost changes?</label></div>
-    <div class="ctrl"><label>One-time costs ($)</label><input type="number" id="fc-onetime" value="0" onchange="fcCalc()"></div>
-  </div>
-  <div class="ccard">
-    <div class="ctitle">April 2026 — Weekly Forecast</div>
-    <div class="krow" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px;">
-      <div class="kcard" style="--kc:#1a56db"><div class="klbl">Revenue</div><div class="kval" id="fo-rev">—</div></div>
-      <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Gross Profit</div><div class="kval" id="fo-gp">—</div></div>
-      <div class="kcard" style="--kc:#333"><div class="klbl">EBITDA</div><div class="kval" id="fo-eb">—</div></div>
+<!-- STATUS BAR -->
+<div id="fc-status" style="background:#fff;border:1px solid #d8d6d0;padding:10px 14px;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.1em;">Month</span><br>
+      <select id="fc-month" onchange="fcLoadMonth()" style="font-family:'DM Mono',monospace;font-size:13px;padding:4px 8px;border:1px solid #d8d6d0;background:#fff;font-weight:600;">
+        <option value="2026-04">April 2026</option>
+        <option value="2026-05">May 2026</option>
+        <option value="2026-06">June 2026</option>
+      </select>
     </div>
-    <div id="fo-detail"></div>
-    <div class="ch" style="margin-top:8px"><canvas id="c-fc-weekly"></canvas></div>
+    <div>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.1em;">Current Week</span><br>
+      <select id="fc-week" onchange="fcSave();fcRender()" style="font-family:'DM Mono',monospace;font-size:13px;padding:4px 8px;border:1px solid #d8d6d0;background:#fff;font-weight:600;">
+        <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
+      </select>
+    </div>
+    <div id="fc-updated" style="font-family:'DM Mono',monospace;font-size:11px;color:#888;"></div>
+  </div>
+  <div style="display:flex;gap:6px;">
+    <button onclick="fcMarkActual()" class="h-btn" style="background:#0a7c4e;color:#fff;border-color:#0a7c4e;font-weight:600;">Mark Week as Actual</button>
+    <button onclick="fcRecalc()" class="h-btn" style="font-weight:600;">Recalculate</button>
+    <button onclick="if(confirm('Reset all forecast data for this month?')){localStorage.removeItem(fcKey());fcInit();}" class="h-btn" style="color:#b91c1c;border-color:#b91c1c;">Reset</button>
   </div>
 </div>
+
+<!-- SUMMARY KPIs -->
+<div id="fc-kpis" class="krow" style="grid-template-columns:repeat(6,1fr);"></div>
+
+<!-- CHARTS ROW -->
+<div class="g2">
+  <div class="ccard"><div class="ctitle">Weekly Revenue / COS / GP</div><div class="csub">USD thousands per week</div><div class="ch"><canvas id="c-fc-weekly"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Revenue by Project</div><div class="csub">Monthly total (all weeks summed)</div><div class="ch"><canvas id="c-fc-byproj"></canvas></div></div>
+</div>
+
+<!-- PROJECT CARDS -->
+<div class="sec">Project Detail — Click to Expand</div>
+<div id="fc-projects"></div>
+
+<!-- MONTHLY P&L TABLE -->
+<div class="sec">Monthly P&L Summary (auto-calculated from weekly inputs)</div>
+<div class="ccard"><div id="fc-pnl-table"></div></div>
+
+<!-- WEEKLY TREND TABLE -->
+<div class="sec">Weekly P&L Trend</div>
+<div class="ccard"><div id="fc-trend-table"></div></div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════ -->
@@ -627,40 +656,278 @@ function renderRamp(){
   ]},{scales:{y:{ticks:{callback:function(v){return v+'%';}},min:-50,max:60}},plugins:{datalabels:{display:true,color:'#0f172a',font:{family:"'DM Mono',monospace",size:9},formatter:function(v){return v!==null?v+'%':'';},align:'top'}}});
 }
 
-// Forecast
-function fcCalc(){
-  var hrs=173;
-  var ghaR=+document.getElementById('fc-gha-hc').value*hrs*(+document.getElementById('fc-gha-rate').value);
-  var ghuR=+document.getElementById('fc-ghu-hc').value*hrs*(+document.getElementById('fc-ghu-rate').value);
-  var oxR=+document.getElementById('fc-ox-hc').value*hrs*(+document.getElementById('fc-ox-rate').value);
-  var tot=ghaR+ghuR+oxR;
-  var ghaC=ghaR*(+document.getElementById('fc-gha-cos').value/100);
-  var ghuC=ghuR*(+document.getElementById('fc-ghu-cos').value/100);
-  var oxC=oxR*(+document.getElementById('fc-ox-cos').value/100);
-  var gp=tot-ghaC-ghuC-oxC;
-  var opex=+document.getElementById('fc-opex').value;
-  var onetime=+document.getElementById('fc-onetime').value;
-  var eb=gp-opex-onetime+12000;
+// ═══ FORECAST ENGINE ═══
+var FC_PROJECTS=[
+  {id:'gh-africa',name:'GH Africa',market:'Lagos+SA',rate:14.10,otRate:21.15,costHr:5.50,commission:0,software:0,bhc:258,buf:30,indirect:8000},
+  {id:'gh-us',name:'GH US',market:'Springfield',rate:35.00,otRate:52.50,costHr:23.87,commission:0,software:0,bhc:155,buf:0,indirect:15000},
+  {id:'9am',name:'9am Health',market:'Springfield',rate:35.00,otRate:52.50,costHr:23.87,commission:0,software:0,bhc:22,buf:0,indirect:2000},
+  {id:'almedia',name:'Almedia',market:'Lagos',rate:10.25,otRate:15.38,costHr:2.60,commission:0,software:0,bhc:111,buf:10,indirect:4000},
+  {id:'outschool',name:'Outschool',market:'Lagos',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:76,buf:9,indirect:3000},
+  {id:'aurora',name:'Aurora',market:'Lagos',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:55,buf:0,indirect:2000},
+  {id:'faire',name:'Faire',market:'Lagos',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:34,buf:6,indirect:1500},
+  {id:'csi',name:'CSI',market:'SA',rate:16.00,otRate:24.00,costHr:6.50,commission:0,software:0,bhc:16,buf:0,indirect:1000},
+  {id:'curri',name:'Curri',market:'Lagos+SA',rate:12.50,otRate:18.75,costHr:3.50,commission:0,software:0,bhc:25,buf:6,indirect:1500},
+  {id:'finix',name:'Finix',market:'Lagos',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:15,buf:2,indirect:800},
+  {id:'other-cx',name:'Other CX (14)',market:'Lagos',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:38,buf:16,indirect:3000}
+];
+var FC_HRS_WK=43.25; // 173/4
+var FC_OPEX=370000;var FC_DEP=12000;
 
-  document.getElementById('fo-rev').textContent='$'+(tot/1e6).toFixed(2)+'M';
-  document.getElementById('fo-gp').textContent='$'+(gp/1e3).toFixed(0)+'K ('+(gp/tot*100).toFixed(0)+'%)';
-  document.getElementById('fo-eb').textContent='$'+(eb/1e3).toFixed(0)+'K';
+function fcKey(){return 'hugo-cx-forecast-'+document.getElementById('fc-month').value;}
 
-  // Weekly view
-  var wkRev=tot/4.33;
-  mk('c-fc-weekly','bar',{labels:['Wk1','Wk2','Wk3','Wk4','Wk5 (partial)'],datasets:[
-    {label:'Revenue ($K)',data:[wkRev/1e3,wkRev/1e3,wkRev/1e3,wkRev/1e3,wkRev/1e3*0.6].map(function(v){return Math.round(v);}),backgroundColor:'#1a56db'},
-    {label:'COS ($K)',data:[(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3,(ghaC+ghuC+oxC)/4.33/1e3*0.6].map(function(v){return Math.round(v);}),backgroundColor:'#cbd5e1'}
-  ]},{plugins:{datalabels:{display:true,color:'#0f172a',font:{size:9,family:"'DM Mono',monospace"},formatter:function(v){return '$'+v+'K';}}},scales:{y:{ticks:{callback:function(v){return '$'+v+'K';}}}}});
-
-  document.getElementById('fo-detail').innerHTML='<table class="dtbl"><tr><th style="text-align:left">Segment</th><th>HC</th><th>Rate</th><th>Rev</th><th>COS%</th><th>GP</th><th>GP%</th></tr>'+
-    '<tr><td>GH Africa</td><td>'+document.getElementById('fc-gha-hc').value+'</td><td>$'+document.getElementById('fc-gha-rate').value+'</td><td>$'+(ghaR/1e3).toFixed(0)+'K</td><td>'+document.getElementById('fc-gha-cos').value+'%</td><td>$'+((ghaR-ghaC)/1e3).toFixed(0)+'K</td><td>'+((1-ghaC/ghaR)*100).toFixed(0)+'%</td></tr>'+
-    '<tr><td>GH US</td><td>'+document.getElementById('fc-ghu-hc').value+'</td><td>$'+document.getElementById('fc-ghu-rate').value+'</td><td>$'+(ghuR/1e3).toFixed(0)+'K</td><td>'+document.getElementById('fc-ghu-cos').value+'%</td><td>$'+((ghuR-ghuC)/1e3).toFixed(0)+'K</td><td>'+((1-ghuC/ghuR)*100).toFixed(0)+'%</td></tr>'+
-    '<tr><td>Other CX</td><td>'+document.getElementById('fc-ox-hc').value+'</td><td>$'+document.getElementById('fc-ox-rate').value+'</td><td>$'+(oxR/1e3).toFixed(0)+'K</td><td>'+document.getElementById('fc-ox-cos').value+'%</td><td>$'+((oxR-oxC)/1e3).toFixed(0)+'K</td><td>'+((1-oxC/oxR)*100).toFixed(0)+'%</td></tr>'+
-    '<tr class="tot"><td><strong>Total</strong></td><td></td><td></td><td><strong>$'+(tot/1e3).toFixed(0)+'K</strong></td><td></td><td><strong>$'+(gp/1e3).toFixed(0)+'K</strong></td><td><strong>'+(gp/tot*100).toFixed(0)+'%</strong></td></tr></table>';
+function fcDefaultData(){
+  var d={currentWeek:1,lastUpdated:new Date().toISOString(),opex:FC_OPEX,dep:FC_DEP,projects:{}};
+  FC_PROJECTS.forEach(function(p){
+    d.projects[p.id]={
+      fixed:{rate:p.rate,otRate:p.otRate,costHr:p.costHr,commission:p.commission,software:p.software,indirect:p.indirect,useHistorical:true},
+      growth:{enabled:false,hc:0,startWeek:3},
+      material:{enabled:false,oneTime:0,recurring:0,desc:''},
+      weeks:{
+        w1:{bhc:p.bhc,buf:p.buf,stdHrs:null,otHrs:0,added:0,lost:0,isActual:false},
+        w2:{bhc:p.bhc,buf:p.buf,stdHrs:null,otHrs:0,added:0,lost:0,isActual:false},
+        w3:{bhc:p.bhc,buf:p.buf,stdHrs:null,otHrs:0,added:0,lost:0,isActual:false},
+        w4:{bhc:p.bhc,buf:p.buf,stdHrs:null,otHrs:0,added:0,lost:0,isActual:false}
+      }
+    };
+  });
+  return d;
 }
 
-renderCharts();fcCalc();
+var fcData=null;
+function fcInit(){
+  var raw=localStorage.getItem(fcKey());
+  if(raw){try{fcData=JSON.parse(raw);}catch(e){fcData=fcDefaultData();}}
+  else{fcData=fcDefaultData();}
+  // Migrate: ensure growth/material exist on all projects
+  for(var pid in fcData.projects){
+    var p=fcData.projects[pid];
+    if(!p.growth)p.growth={enabled:false,hc:0,startWeek:3};
+    if(!p.material)p.material={enabled:false,oneTime:0,recurring:0,desc:''};
+  }
+  document.getElementById('fc-week').value=fcData.currentWeek;
+  fcRender();
+}
+function fcLoadMonth(){fcInit();}
+function fcSave(){
+  fcData.currentWeek=+document.getElementById('fc-week').value;
+  fcData.lastUpdated=new Date().toISOString();
+  localStorage.setItem(fcKey(),JSON.stringify(fcData));
+}
+function fcRecalc(){fcSave();fcRender();}
+function fcMarkActual(){
+  var cw=+document.getElementById('fc-week').value;
+  for(var pid in fcData.projects){
+    var wk=fcData.projects[pid].weeks['w'+cw];
+    if(wk)wk.isActual=true;
+  }
+  if(cw<4){fcData.currentWeek=cw+1;document.getElementById('fc-week').value=cw+1;}
+  fcSave();fcRender();
+}
+
+function fcCalcProject(pid,wNum){
+  var p=fcData.projects[pid];if(!p)return{rev:0,cos:0,gm:0};
+  var f=p.fixed,w=p.weeks['w'+wNum];if(!w)return{rev:0,cos:0,gm:0};
+  // Growth: add HC from startWeek onward
+  var growthHC=0;
+  if(p.growth&&p.growth.enabled&&wNum>=p.growth.startWeek){growthHC=p.growth.hc||0;}
+  var effBHC=w.bhc+growthHC;
+  var stdHrs=w.stdHrs!==null&&w.stdHrs!==''?+w.stdHrs:(effBHC*FC_HRS_WK);
+  var rev=(stdHrs*f.rate)+(w.otHrs*f.otRate);
+  var agentCost=(effBHC+w.buf)*f.costHr*FC_HRS_WK;
+  var otCost=w.otHrs*f.costHr*1.5;
+  var attrCost=w.lost*f.costHr*FC_HRS_WK*0.5;
+  var commission=rev*(f.commission/100);
+  var softwareWk=f.software;
+  var indirectWk=f.indirect/4;
+  // Material: one-time in startWeek (or w1), recurring /4 each week
+  var materialCost=0;
+  if(p.material&&p.material.enabled){
+    materialCost+=(p.material.recurring||0)/4;
+    if(wNum===(p.growth&&p.growth.startWeek||1)){materialCost+=(p.material.oneTime||0);}
+  }
+  var cos=agentCost+otCost+attrCost+commission+softwareWk+indirectWk+materialCost;
+  return{rev:rev,cos:cos,gm:rev-cos,bhc:effBHC,buf:w.buf,stdHrs:stdHrs,util:effBHC>0?stdHrs/(effBHC*FC_HRS_WK):0};
+}
+
+function fcRender(){
+  var cw=+document.getElementById('fc-week').value;
+  var updated=fcData.lastUpdated?new Date(fcData.lastUpdated).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'Never';
+  document.getElementById('fc-updated').innerHTML='Updated: '+updated+' · Week '+cw+' of 4';
+
+  // Compute all
+  var weekTotals=[{rev:0,cos:0,gm:0},{rev:0,cos:0,gm:0},{rev:0,cos:0,gm:0},{rev:0,cos:0,gm:0}];
+  var projMonthly={};
+  FC_PROJECTS.forEach(function(pdef){
+    var pm={rev:0,cos:0,gm:0,bhc:0,rate:fcData.projects[pdef.id]?fcData.projects[pdef.id].fixed.rate:pdef.rate};
+    for(var wi=1;wi<=4;wi++){
+      var r=fcCalcProject(pdef.id,wi);
+      weekTotals[wi-1].rev+=r.rev;weekTotals[wi-1].cos+=r.cos;weekTotals[wi-1].gm+=r.gm;
+      pm.rev+=r.rev;pm.cos+=r.cos;pm.gm+=r.gm;pm.bhc=r.bhc||pm.bhc;
+    }
+    projMonthly[pdef.id]=pm;
+  });
+
+  var totalRev=weekTotals.reduce(function(s,w){return s+w.rev;},0);
+  var totalCOS=weekTotals.reduce(function(s,w){return s+w.cos;},0);
+  var totalGP=totalRev-totalCOS;
+  var totalGM=totalRev>0?(totalGP/totalRev*100):0;
+  var ebitda=totalGP-fcData.opex-fcData.dep;
+
+  // KPIs
+  var kh=document.getElementById('fc-kpis');
+  kh.innerHTML=
+    '<div class="kcard" style="--kc:#1a56db"><div class="klbl">Revenue</div><div class="kval">$'+(totalRev/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:#b91c1c"><div class="klbl">COS</div><div class="kval">$'+(totalCOS/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Gross Profit</div><div class="kval">$'+(totalGP/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:'+(totalGM>=35?'#0a7c4e':totalGM>=25?'#b45309':'#b91c1c')+'"><div class="klbl">GM%</div><div class="kval">'+totalGM.toFixed(1)+'%</div></div>'+
+    '<div class="kcard" style="--kc:#333"><div class="klbl">OpEx</div><div class="kval">$'+(fcData.opex/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:'+(ebitda>=0?'#0a7c4e':'#b91c1c')+'"><div class="klbl">EBITDA</div><div class="kval">$'+(ebitda/1e3).toFixed(0)+'K</div></div>';
+
+  // Weekly chart
+  mk('c-fc-weekly','bar',{labels:['W1','W2','W3','W4'],datasets:[
+    {label:'Revenue',data:weekTotals.map(function(w){return Math.round(w.rev/1e3);}),backgroundColor:'#1a56db'},
+    {label:'COS',data:weekTotals.map(function(w){return Math.round(w.cos/1e3);}),backgroundColor:'#cbd5e1'},
+    {label:'GP',data:weekTotals.map(function(w){return Math.round(w.gm/1e3);}),backgroundColor:'#0a7c4e',type:'line',borderColor:'#0a7c4e',pointRadius:4,fill:false}
+  ]},{plugins:{datalabels:{display:true,color:'#0f172a',font:{size:9,family:"'DM Mono',monospace"},formatter:function(v){return '$'+v+'K';}}},scales:{y:{ticks:{callback:function(v){return '$'+v+'K';}}}}});
+
+  // By-project chart
+  var projLabels=[],projRevs=[];
+  FC_PROJECTS.forEach(function(pdef){var pm=projMonthly[pdef.id];projLabels.push(pdef.name);projRevs.push(Math.round(pm.rev/1e3));});
+  mk('c-fc-byproj','bar',{labels:projLabels,datasets:[
+    {label:'Monthly Rev ($K)',data:projRevs,backgroundColor:'#1a56db'}
+  ]},{indexAxis:'y',plugins:{datalabels:{display:true,color:'#fff',font:{size:9,weight:700,family:"'DM Mono',monospace"},formatter:function(v){return '$'+v+'K';}}},scales:{x:{ticks:{callback:function(v){return '$'+v+'K';}}}}});
+
+  // Project cards
+  var ph=document.getElementById('fc-projects');
+  var html='';
+  FC_PROJECTS.forEach(function(pdef){
+    var pd=fcData.projects[pdef.id];if(!pd)return;
+    var pm=projMonthly[pdef.id];
+    var gmPct=pm.rev>0?(pm.gm/pm.rev*100).toFixed(0):'0';
+    var gmClass=+gmPct>=35?'hi':(+gmPct>=20?'mid':'lo');
+
+    html+='<div class="fc-card" id="fc-card-'+pdef.id+'">';
+    html+='<div class="fc-card-hd" onclick="this.parentElement.classList.toggle(\'open\')">';
+    html+='<div style="display:flex;align-items:center;gap:10px;"><span class="fc-arrow">▶</span><span class="fc-name">'+pdef.name+'</span><span class="pill pill-b" style="font-size:8px;">'+pdef.market+'</span></div>';
+    html+='<div class="fc-mini"><span>Rev: $'+(pm.rev/1e3).toFixed(0)+'K</span><span>GM: <span class="'+gmClass+'">'+gmPct+'%</span></span><span>HC: '+pm.bhc+'</span></div>';
+    html+='</div>';
+    html+='<div class="fc-card-bd">';
+
+    // Fixed inputs row
+    html+='<div style="margin:10px 0 6px;font-family:\'DM Mono\',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.08em;">Set-once Inputs</div>';
+    html+='<div class="fc-set-row">';
+    html+='<div class="fc-set-item"><label>Bill Rate ($/hr)</label><input value="'+pd.fixed.rate.toFixed(2)+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.rate=+this.value;fcSave();fcRender()"></div>';
+    html+='<div class="fc-set-item"><label>OT Rate ($/hr)</label><input value="'+pd.fixed.otRate.toFixed(2)+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.otRate=+this.value;fcSave();fcRender()"></div>';
+    html+='<div class="fc-set-item"><label>Cost/Hr ($)</label><input value="'+pd.fixed.costHr.toFixed(2)+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.costHr=+this.value;fcSave();fcRender()"></div>';
+    html+='<div class="fc-set-item"><label>Indirect ($/mo)</label><input value="'+pd.fixed.indirect+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.indirect=+this.value;fcSave();fcRender()"></div>';
+    html+='</div>';
+
+    // Growth toggle
+    var g=pd.growth||{enabled:false,hc:0,startWeek:3};
+    html+='<div style="display:flex;gap:16px;align-items:flex-start;margin:6px 0 8px;flex-wrap:wrap;">';
+    html+='<div style="background:'+(g.enabled?'#e6f4ee':'#f8fafc')+';border:1px solid '+(g.enabled?'#b6dfcd':'#d8d6d0')+';padding:8px 12px;flex:1;min-width:220px;">';
+    html+='<label style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#888;cursor:pointer;display:flex;align-items:center;gap:6px;"><input type="checkbox" '+(g.enabled?'checked':'')+' onchange="if(!fcData.projects[\''+pdef.id+'\'].growth)fcData.projects[\''+pdef.id+'\'].growth={enabled:false,hc:0,startWeek:3};fcData.projects[\''+pdef.id+'\'].growth.enabled=this.checked;fcSave();fcRender()"> Growth Expected</label>';
+    if(g.enabled){
+      html+='<div style="display:flex;gap:8px;margin-top:6px;">';
+      html+='<div class="fc-set-item"><label>Additional HC</label><input value="'+g.hc+'" type="number" onchange="fcData.projects[\''+pdef.id+'\'].growth.hc=+this.value;fcSave();fcRender()"></div>';
+      html+='<div class="fc-set-item"><label>Start Week</label><select onchange="fcData.projects[\''+pdef.id+'\'].growth.startWeek=+this.value;fcSave();fcRender()" style="font-family:\'DM Mono\',monospace;font-size:11px;padding:3px 6px;border:1px solid #d8d6d0;width:100%;">';
+      for(var sw=1;sw<=4;sw++){html+='<option value="'+sw+'"'+(g.startWeek===sw?' selected':'')+'>W'+sw+'</option>';}
+      html+='</select></div></div>';
+    }
+    html+='</div>';
+
+    // Material cost toggle
+    var m=pd.material||{enabled:false,oneTime:0,recurring:0,desc:''};
+    html+='<div style="background:'+(m.enabled?'#fdf3e6':'#f8fafc')+';border:1px solid '+(m.enabled?'#f5d5a0':'#d8d6d0')+';padding:8px 12px;flex:1;min-width:220px;">';
+    html+='<label style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#888;cursor:pointer;display:flex;align-items:center;gap:6px;"><input type="checkbox" '+(m.enabled?'checked':'')+' onchange="if(!fcData.projects[\''+pdef.id+'\'].material)fcData.projects[\''+pdef.id+'\'].material={enabled:false,oneTime:0,recurring:0,desc:\'\'};fcData.projects[\''+pdef.id+'\'].material.enabled=this.checked;fcSave();fcRender()"> Material Cost Changes</label>';
+    if(m.enabled){
+      html+='<div style="display:flex;gap:8px;margin-top:6px;">';
+      html+='<div class="fc-set-item"><label>One-Time ($)</label><input value="'+m.oneTime+'" type="number" onchange="fcData.projects[\''+pdef.id+'\'].material.oneTime=+this.value;fcSave();fcRender()"></div>';
+      html+='<div class="fc-set-item"><label>Recurring ($/mo)</label><input value="'+m.recurring+'" type="number" onchange="fcData.projects[\''+pdef.id+'\'].material.recurring=+this.value;fcSave();fcRender()"></div>';
+      html+='</div>';
+      html+='<div style="margin-top:4px;"><div class="fc-set-item"><label>Description</label><input value="'+(m.desc||'')+'" style="width:100%;text-align:left;" onchange="fcData.projects[\''+pdef.id+'\'].material.desc=this.value;fcSave()"></div></div>';
+    }
+    html+='</div></div>';
+
+    // Weekly table
+    html+='<div style="overflow-x:auto;"><table class="dtbl" style="font-size:10px;">';
+    // Header
+    html+='<tr><th style="text-align:left;width:100px;"></th>';
+    for(var wi=1;wi<=4;wi++){
+      var wk=pd.weeks['w'+wi];
+      var isAct=wk&&wk.isActual;
+      html+='<th class="fc-wk-hdr '+(isAct?'fc-wk-actual':'fc-wk-forecast')+'">W'+wi+(isAct?' ✓':' est')+'</th>';
+    }
+    html+='<th style="background:#f8fafc;font-weight:700;">Monthly</th></tr>';
+
+    // Rows: Billable HC, Buffer HC, Std Hrs, OT Hrs, Added, Lost
+    var fields=[
+      {key:'bhc',label:'Billable HC',fmt:'int'},
+      {key:'buf',label:'Buffer HC',fmt:'int'},
+      {key:'stdHrs',label:'Std Hours',fmt:'int',placeholder:'auto'},
+      {key:'otHrs',label:'OT Hours',fmt:'int'},
+      {key:'added',label:'Added',fmt:'int'},
+      {key:'lost',label:'Attrition',fmt:'int'}
+    ];
+    fields.forEach(function(fld){
+      html+='<tr><td style="text-align:left;font-size:9px;color:#888;text-transform:uppercase;">'+fld.label+'</td>';
+      for(var wi=1;wi<=4;wi++){
+        var wk=pd.weeks['w'+wi];
+        var val=wk?wk[fld.key]:'';
+        var disabled=wk&&wk.isActual?'disabled':'';
+        var ph=fld.placeholder||'';
+        html+='<td style="text-align:center;"><input class="fc-inp" type="number" value="'+(val!==null&&val!==''?val:'')+'" placeholder="'+ph+'" '+disabled+' onchange="fcData.projects[\''+pdef.id+'\'].weeks.w'+wi+'.'+fld.key+'=this.value===\'\'?null:+this.value;fcSave();fcRender()"></td>';
+      }
+      // Monthly sum or avg
+      var mval=0;
+      for(var wi2=1;wi2<=4;wi2++){var wk2=pd.weeks['w'+wi2];if(wk2){if(fld.key==='bhc'||fld.key==='buf'){mval=wk2[fld.key]||mval;}else{mval+=(wk2[fld.key]||0);}}}
+      html+='<td class="fc-monthly">'+(fld.key==='bhc'||fld.key==='buf'?mval:mval||'-')+'</td></tr>';
+    });
+
+    // Calculated outputs
+    html+='<tr style="border-top:2px solid #d8d6d0;"><td style="text-align:left;font-weight:600;font-size:9px;color:#0f172a;">REVENUE</td>';
+    var mRev=0;
+    for(var wi=1;wi<=4;wi++){var r=fcCalcProject(pdef.id,wi);mRev+=r.rev;html+='<td class="fc-calc" style="color:#0f172a;font-weight:600;">$'+(r.rev/1e3).toFixed(0)+'K</td>';}
+    html+='<td class="fc-monthly" style="color:#1a56db;">$'+(mRev/1e3).toFixed(0)+'K</td></tr>';
+
+    html+='<tr><td style="text-align:left;font-size:9px;color:#888;">COS</td>';
+    var mCos=0;
+    for(var wi=1;wi<=4;wi++){var r=fcCalcProject(pdef.id,wi);mCos+=r.cos;html+='<td class="fc-calc">$'+(r.cos/1e3).toFixed(0)+'K</td>';}
+    html+='<td class="fc-monthly">$'+(mCos/1e3).toFixed(0)+'K</td></tr>';
+
+    html+='<tr><td style="text-align:left;font-size:9px;color:#0a7c4e;font-weight:600;">GM</td>';
+    for(var wi=1;wi<=4;wi++){var r=fcCalcProject(pdef.id,wi);var gp=r.gm;var c=gp>=0?'#0a7c4e':'#b91c1c';html+='<td class="fc-calc" style="color:'+c+';font-weight:600;">$'+(gp/1e3).toFixed(0)+'K</td>';}
+    html+='<td class="fc-monthly" style="color:'+(pm.gm>=0?'#0a7c4e':'#b91c1c')+';">$'+(pm.gm/1e3).toFixed(0)+'K ('+gmPct+'%)</td></tr>';
+
+    html+='</table></div></div></div>';
+  });
+  ph.innerHTML=html;
+
+  // Monthly P&L table
+  var pnl=document.getElementById('fc-pnl-table');
+  var pt='<table class="dtbl"><tr><th style="text-align:left">Project</th><th>HC</th><th>Rate</th><th>Rev</th><th>COS</th><th>GM</th><th>GM%</th></tr>';
+  FC_PROJECTS.forEach(function(pdef){
+    var pm=projMonthly[pdef.id];
+    var gm=pm.rev>0?(pm.gm/pm.rev*100).toFixed(0):'0';
+    var gc=+gm>=35?'hi':(+gm>=20?'mid':'lo');
+    pt+='<tr><td>'+pdef.name+'</td><td>'+pm.bhc+'</td><td>$'+pm.rate.toFixed(2)+'</td><td>$'+(pm.rev/1e3).toFixed(0)+'K</td><td>$'+(pm.cos/1e3).toFixed(0)+'K</td><td class="'+gc+'">$'+(pm.gm/1e3).toFixed(0)+'K</td><td class="'+gc+'">'+gm+'%</td></tr>';
+  });
+  pt+='<tr class="tot"><td><strong>CX Total</strong></td><td></td><td></td><td><strong>$'+(totalRev/1e3).toFixed(0)+'K</strong></td><td><strong>$'+(totalCOS/1e3).toFixed(0)+'K</strong></td><td><strong>$'+(totalGP/1e3).toFixed(0)+'K</strong></td><td><strong>'+totalGM.toFixed(0)+'%</strong></td></tr>';
+  pt+='</table>';
+  pnl.innerHTML=pt;
+
+  // Weekly trend table
+  var tt=document.getElementById('fc-trend-table');
+  var th='<table class="dtbl"><tr><th style="text-align:left"></th><th class="fc-wk-hdr '+(fcData.projects[FC_PROJECTS[0].id].weeks.w1.isActual?'fc-wk-actual':'fc-wk-forecast')+'">W1</th><th class="fc-wk-hdr '+(fcData.projects[FC_PROJECTS[0].id].weeks.w2.isActual?'fc-wk-actual':'fc-wk-forecast')+'">W2</th><th class="fc-wk-hdr '+(fcData.projects[FC_PROJECTS[0].id].weeks.w3.isActual?'fc-wk-actual':'fc-wk-forecast')+'">W3</th><th class="fc-wk-hdr '+(fcData.projects[FC_PROJECTS[0].id].weeks.w4.isActual?'fc-wk-actual':'fc-wk-forecast')+'">W4</th><th style="background:#f8fafc;font-weight:700;">Monthly</th></tr>';
+  th+='<tr class="bg-g"><td><strong>Revenue</strong></td>';for(var wi=0;wi<4;wi++){th+='<td><strong>$'+(weekTotals[wi].rev/1e3).toFixed(0)+'K</strong></td>';}th+='<td><strong>$'+(totalRev/1e3).toFixed(0)+'K</strong></td></tr>';
+  th+='<tr class="bg-r"><td><strong>COS</strong></td>';for(var wi=0;wi<4;wi++){th+='<td>$'+(weekTotals[wi].cos/1e3).toFixed(0)+'K</td>';}th+='<td><strong>$'+(totalCOS/1e3).toFixed(0)+'K</strong></td></tr>';
+  th+='<tr><td><strong>Gross Profit</strong></td>';for(var wi=0;wi<4;wi++){var c=weekTotals[wi].gm>=0?'hi':'lo';th+='<td class="'+c+'"><strong>$'+(weekTotals[wi].gm/1e3).toFixed(0)+'K</strong></td>';}th+='<td class="'+(totalGP>=0?'hi':'lo')+'"><strong>$'+(totalGP/1e3).toFixed(0)+'K</strong></td></tr>';
+  th+='<tr><td><strong>GM%</strong></td>';for(var wi=0;wi<4;wi++){var gm=weekTotals[wi].rev>0?(weekTotals[wi].gm/weekTotals[wi].rev*100).toFixed(0):'0';var gc=+gm>=35?'hi':(+gm>=20?'mid':'lo');th+='<td class="'+gc+'">'+gm+'%</td>';}th+='<td class="'+(totalGM>=35?'hi':(totalGM>=20?'mid':'lo'))+'"><strong>'+totalGM.toFixed(0)+'%</strong></td></tr>';
+  th+='</table>';
+  tt.innerHTML=th;
+}
+
+renderCharts();fcInit();
 </script>
 </body>
 </html>

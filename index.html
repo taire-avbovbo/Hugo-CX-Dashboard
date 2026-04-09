@@ -2,767 +2,1257 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hugo — Billing Portal</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAZElEQVR4nGMUFBT8zzCAgGkgLR91wKgDGBgYGFjwST7ZZ4ohJuN0Gq+BpOoZ8BAYdcCoAwbcAXizITaALZtRAgY8BEYdMOAOIDkRklMX4AMDHgKjDhh1wKgDGEd7RqMOGPEOAADoOw2Agco1igAAAABJRU5ErkJggg==">
+<title>Hugo CX — Service Delivery Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:#fffefa;color:#111;font-size:13px;line-height:1.6;}
-.header{background:#111;color:#fff;padding:28px 24px 22px;border-top:3px solid #f5cf46;}
-.h-eyebrow{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px;}
-.h-title{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px;}.h-title span{color:#5eead4;}
-.h-period{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:14px;}
-.month-bar{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
-.month-pill{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;padding:7px 18px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.5);cursor:pointer;letter-spacing:.04em;}
-.month-pill:hover{border-color:rgba(255,255,255,.4);color:#fff;}
-.month-pill.act{background:#f5cf46;color:#111;border-color:#f5cf46;font-weight:700;}
-.month-pill .status-badge{font-size:8px;padding:2px 6px;margin-left:6px;font-weight:700;letter-spacing:.05em;vertical-align:middle;}
-.status-badge.draft{background:#555;color:#fff;}.status-badge.submitted{background:#d97706;color:#fff;}.status-badge.accepted{background:#16a34a;color:#fff;}
-.invoice-actions{display:flex;gap:6px;margin-top:10px;margin-bottom:14px;}
-.inv-btn{font-family:'DM Mono',monospace;font-size:10px;padding:7px 16px;border:none;cursor:pointer;font-weight:600;letter-spacing:.04em;}
-.inv-btn.submit{background:#d97706;color:#fff;}.inv-btn.submit:hover{background:#b45309;}
-.inv-btn.retract{background:#555;color:#fff;}.inv-btn.retract:hover{background:#333;}
-.inv-btn.accept{background:#16a34a;color:#fff;}.inv-btn.accept:hover{background:#15803d;}
-.inv-status-bar{padding:10px 16px;font-size:11px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
-.inv-status-bar.draft-bar{background:#333;color:#fff;border-left:3px solid #555;}
-.inv-status-bar.submitted-bar{background:#fffbeb;color:#78350f;border-left:3px solid #d97706;}
-.inv-status-bar.accepted-bar{background:#f0fdf4;color:#14532d;border-left:3px solid #16a34a;}
-.h-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
-.h-stat{background:rgba(255,255,255,.06);padding:10px 14px;border-top:2px solid #f5cf46;}
-.h-stat-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;line-height:1;}
-.h-stat-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:3px;}
-.h-user-bar{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);}
-.h-user{font-size:11px;color:rgba(255,255,255,.5);}.h-user strong{color:rgba(255,255,255,.8);}
-.h-actions{display:flex;gap:8px;}
-.h-btn{font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);cursor:pointer;letter-spacing:.04em;}
-.h-btn:hover{border-color:#f5cf46;color:#f5cf46;}
-.h-btn.danger:hover{border-color:#f87171;color:#f87171;}
-.tabbar{background:#fff;border-bottom:1px solid #d0cfc8;display:flex;padding:0 24px;position:sticky;top:0;z-index:50;}
-.tab{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:10px 14px;border:none;background:none;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
-.tab:hover{color:#333;}.tab.act{color:#111;border-bottom-color:#f5cf46;}
-.page-body{padding:20px 24px 64px;max-width:1320px;}
-.pane{display:none;}.pane.act{display:block;}
-.sec{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:800;color:#111;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #f5cf46;}.sec:first-child{margin-top:0;}
-.sec-sm{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.13em;color:#888;margin:16px 0 7px;padding-bottom:4px;border-bottom:1px solid #e0ded8;}
-.card{background:#fff;border:1px solid #d8d6d0;margin-bottom:12px;}
-.callout{border-left:3px solid var(--cc,#64748b);background:var(--cb,#f8fafc);padding:11px 15px;font-size:12px;color:#475569;margin-bottom:12px;line-height:1.65;}.callout strong{color:#111;}
-.callout.blue{--cc:#2563eb;--cb:#eff6ff;}.callout.green{--cc:#16a34a;--cb:#f0fdf4;}.callout.amber{--cc:#d97706;--cb:#fffbeb;}.callout.teal{--cc:#0d9488;--cb:#f0fdfa;}
-.eq-box{background:#fff;border:1px solid #d8d6d0;padding:20px 24px;margin-bottom:14px;}
-.eq-box h3{font-size:11px;font-family:'DM Mono',monospace;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;}
-.eq-row{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;}
-.eq-block{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 18px;min-width:100px;min-height:80px;}
-.eq-block.prod{background:#f0fdfa;border:1px solid #99f6e4;}.eq-block.train{background:#eff6ff;border:1px solid #bfdbfe;}
-.eq-block.invoice{background:#f0fdf4;border:1px solid #bbf7d0;}.eq-block.assembled{background:#fffbeb;border:1px solid #fde68a;}
-.eq-block.asm-buf{background:#faf5ff;border:1px solid #e9d5ff;}.eq-block.buffer{background:#f5f3ff;border:1px solid #e9d5ff;}
-.eq-block.ot{background:#fef2f2;border:1px solid #fecaca;}.eq-block.total-box{background:#f0fdfa;border:1px solid #0d9488;}
-.eq-val{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;line-height:1.2;}
-.eq-lbl{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-top:4px;text-align:center;line-height:1.3;}
-.eq-op{font-size:20px;font-weight:800;color:#ccc;display:flex;align-items:center;padding:0 2px;}
-.eq-note{font-size:11px;color:#475569;margin-top:12px;padding:8px 12px;border-left:3px solid var(--nc,#0d9488);background:var(--nb,#f0fdfa);line-height:1.55;}.eq-note strong{color:#0d9488;}
-.summary-box{background:#111;color:#fff;padding:18px 22px;margin-bottom:14px;line-height:1.7;}
-.summary-box .big-num{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#5eead4;}
-.summary-box .exp{font-size:12px;color:rgba(255,255,255,.65);margin-top:6px;}
-.dtbl{width:100%;border-collapse:collapse;font-size:12px;}
-.dtbl th{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:#fff;background:#111;padding:8px 10px;text-align:right;white-space:nowrap;}
-.dtbl th:first-child{text-align:left;padding-left:14px;}
-.dtbl td{padding:9px 10px;border-bottom:1px solid #eee;color:#555;text-align:right;font-family:'DM Mono',monospace;font-size:11px;}
-.dtbl td:first-child{text-align:left;color:#111;font-family:'DM Sans',sans-serif;font-weight:500;font-size:12px;padding-left:14px;}
-.dtbl tr:hover td{background:#fafaf8;}.dtbl tr.sec-row td{background:#f1f5f9;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #d8d6d0;}
-.dtbl tr.sub td{background:#f0fdfa;font-weight:600;border-bottom:2px solid #99f6e4;}
-.dtbl tr.tot td{background:#111 !important;color:#fff;font-weight:600;border:none;}
-.dtbl td.pos{color:#0a7c4e;font-weight:600;}.dtbl td.neg{color:#dc2626;font-weight:600;}.dtbl td.muted{color:#cbd5e1;}
-.expand-trigger{cursor:pointer;user-select:none;}
-.expand-trigger td:first-child::before{content:'+ ';font-family:'DM Mono',monospace;font-size:11px;color:#0d9488;font-weight:700;}
-.expand-trigger.open td:first-child::before{content:'- ';}
-.expand-detail{display:none;}.expand-detail.open{display:table-row;}
-.expand-detail td{background:#fafaf8 !important;padding:6px 10px 6px 30px;font-size:10px;color:#666;border-bottom:1px solid #f0efe8;}
-.expand-detail td:first-child{padding-left:30px;font-weight:400;color:#666;font-size:11px;}
-.cbadge{display:inline-flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;}
-.cbadge-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:#94a3b8;color:#fff;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;}
-.cbadge-icon:hover{background:#111;}
-.cbadge-label{font-family:'DM Mono',monospace;font-size:7px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-weight:500;}
-#tooltip{display:none;position:fixed;z-index:9999;background:#111;color:#fff;padding:14px 18px;max-width:400px;font-size:12px;line-height:1.65;font-family:'DM Sans',sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.3);pointer-events:none;}
-.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
-.scenario-card{background:#fff;border:1px solid #d8d6d0;padding:16px 18px;position:relative;}
-.scenario-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--sc,#888);}
-.scenario-num{font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
-.scenario-title{font-size:14px;font-weight:700;margin-bottom:8px;}
-.scenario-body{font-size:11.5px;color:#555;line-height:1.55;}.scenario-body strong{color:#111;}
-.scenario-example{font-size:11px;margin-top:8px;padding:10px 12px;line-height:1.6;}
-.scenario-example .ex-label{font-weight:700;font-size:12px;margin-bottom:2px;}
-.scenario-example .ex-data{font-family:'DM Mono',monospace;font-size:11px;color:#555;}
-.recon-item{padding:16px 18px;border-bottom:1px solid #eee;}.recon-item:last-child{border-bottom:none;}
-.recon-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
-.recon-label{font-size:13px;font-weight:600;color:#111;}.recon-label small{font-weight:400;color:#888;font-size:11px;display:block;}
-.recon-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:#0d9488;}
-.bar-line{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
-.bar-tag{font-family:'DM Mono',monospace;font-size:9px;color:#888;width:65px;text-align:right;flex-shrink:0;text-transform:uppercase;letter-spacing:.04em;}
-.bar-track{flex:1;height:26px;background:#eee;position:relative;display:flex;}
-.bar-fill{height:100%;display:flex;align-items:center;padding:0 8px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#fff;white-space:nowrap;}
-.bar-fill.inv-prod{background:#0d9488;}.bar-fill.inv-train{background:#2563eb;}
-.bar-fill.asm{background:#d97706;}.bar-fill.buf{background:#7c3aed;opacity:.75;}
-.bar-fill.asm-zero{background:transparent;color:#ccc;font-size:10px;padding:0 8px;}
-.recon-comment{font-size:11px;color:#555;line-height:1.55;padding:8px 12px;background:#f8faf8;border-left:3px solid #0d9488;margin-top:8px;}
-.bar-legend{display:flex;gap:12px;font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:.04em;text-transform:uppercase;}
-.bar-legend span::before{content:'';display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:middle;}
-.bar-legend .l-p::before{background:#0d9488;}.bar-legend .l-t::before{background:#2563eb;}
-.bar-legend .l-a::before{background:#d97706;}.bar-legend .l-b::before{background:#7c3aed;opacity:.75;}
-.cal-section{margin-bottom:20px;}
-.cal-grid{display:grid;grid-template-columns:200px repeat(4,1fr);gap:1px;background:#d8d6d0;border:1px solid #d8d6d0;}
-.cal-grid>*{background:#fff;}
-.cal-hdr{background:#111 !important;color:#fff;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;text-align:center;}.cal-hdr:first-child{text-align:left;}
-.cal-row-label{padding:8px 12px;font-size:12px;font-weight:600;color:#111;display:flex;flex-direction:column;justify-content:center;}.cal-row-label small{font-weight:400;color:#888;font-size:10px;}
-.cal-cell{padding:6px 8px;text-align:center;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;min-height:40px;}
-.cal-cell.prod{background:#dcfce7;color:#166534;}.cal-cell.train{background:#dbeafe;color:#1e40af;}.cal-cell.empty{background:#fffefa;color:#ccc;}.cal-cell.mixed{background:linear-gradient(135deg,#dbeafe 50%,#dcfce7 50%);color:#1e3a5f;font-size:9px;}
-.cal-footnote{font-size:10px;color:#888;margin-top:6px;font-style:italic;}
-.cal-legend{display:flex;gap:16px;margin-top:12px;font-size:11px;color:#888;}
-.cal-legend-dot{width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;}
-.cal-legend-dot.p{background:#dcfce7;border:1px solid #bbf7d0;}.cal-legend-dot.t{background:#dbeafe;border:1px solid #bfdbfe;}.cal-legend-dot.e{background:#fffefa;border:1px solid #e0ded8;}
-.def-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 18px;}
-.def-item{padding:10px 14px;background:#fafaf8;border-left:3px solid #0d9488;}
-.def-term{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:#0d9488;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
-.def-desc{font-size:11px;color:#555;line-height:1.5;}
-/* Auth screens */
-.auth-screen{position:fixed;inset:0;background:#fffefa;display:flex;align-items:center;justify-content:center;z-index:9999;}
+body{font-family:'DM Sans',sans-serif;background:#f5f5f0;color:#111;font-size:13px;line-height:1.55;}
+/* Auth */
+.auth-screen{position:fixed;inset:0;background:#f5f5f0;display:flex;align-items:center;justify-content:center;z-index:9999;}
 .auth-box{padding:48px 52px;width:420px;text-align:center;background:#fff;border:1px solid #eee;}
 .auth-box input{width:100%;padding:12px 14px;border:2px solid #eee;font-family:'DM Sans',sans-serif;font-size:13px;color:#111;outline:none;margin-bottom:10px;background:#fff;}
-.auth-box input:focus{border-color:#f5cf46;}
-.auth-box .auth-btn{width:100%;padding:13px;background:#111;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.auth-box input:focus{border-color:#1a56db;}
+.auth-box .auth-btn{width:100%;padding:13px;background:#0f172a;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
 .auth-box .auth-btn:hover{background:#333;}
 .auth-box .auth-link{font-size:12px;color:#888;cursor:pointer;margin-top:8px;display:inline-block;}
-.auth-box .auth-link:hover{color:#f5cf46;}
+.auth-box .auth-link:hover{color:#1a56db;}
 .auth-box .auth-err{font-size:11px;color:#dc2626;min-height:16px;margin-bottom:8px;}
-.auth-box .auth-ok{font-size:11px;color:#0a7c4e;min-height:16px;margin-bottom:8px;}
-/* Superadmin panel */
-.admin-panel{position:fixed;bottom:16px;right:16px;width:300px;background:#111;color:#fff;border:1px solid #333;z-index:100;font-size:11px;display:none;}
-.admin-panel.show{display:block;}
-.admin-panel-head{padding:10px 14px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#f5cf46;}
-.admin-panel-body{padding:10px 14px;max-height:250px;overflow-y:auto;}
-.admin-user{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #222;}
-.admin-user:last-child{border:none;}
-.admin-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.admin-dot.on{background:#22c55e;}.admin-dot.off{background:#555;}.admin-dot.pending{background:#f5cf46;}
-.admin-email{color:#ccc;font-size:10px;flex:1;overflow:hidden;text-overflow:ellipsis;}
-.admin-time{color:#666;font-size:9px;font-family:'DM Mono',monospace;}
-.admin-approve{font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border:none;cursor:pointer;font-weight:600;}
-.admin-approve.yes{background:#22c55e;color:#fff;}.admin-approve.no{background:#555;color:#fff;margin-left:3px;}
-.admin-approve:hover{opacity:.8;}
-.admin-section{font-family:'DM Mono',monospace;font-size:9px;color:#f5cf46;letter-spacing:.08em;text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid #333;margin-top:6px;}
-.admin-section:first-child{margin-top:0;}
-/* Invite modal */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;}
-.modal-bg.show{display:flex;}
-.modal{background:#fff;border:1px solid #d8d6d0;padding:32px 36px;width:400px;}
-.modal h3{font-size:14px;font-weight:700;margin-bottom:16px;}
-.modal input{width:100%;padding:10px 12px;border:2px solid #eee;font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:10px;outline:none;}
-.modal input:focus{border-color:#f5cf46;}
-.modal .auth-btn{width:100%;padding:11px;background:#111;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;}
-.modal .auth-err{font-size:11px;color:#dc2626;min-height:16px;}
-.modal .auth-ok{font-size:11px;color:#0a7c4e;min-height:16px;}
-.modal-close{font-size:12px;color:#888;cursor:pointer;margin-top:4px;display:inline-block;}
-.modal-close:hover{color:#111;}
-@media(max-width:1000px){.h-stats{grid-template-columns:repeat(3,1fr);}.scenario-grid{grid-template-columns:1fr;}.def-grid{grid-template-columns:1fr;}}
-@media(max-width:700px){.h-stats{grid-template-columns:1fr 1fr;}.page-body,.header,.tabbar{padding-left:12px;padding-right:12px;}.admin-panel{width:250px;}}
+/* Layout */
+.header{background:#fff;border-bottom:1px solid #d0cfc8;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}
+.h-title{font-size:14px;font-weight:600;color:#0f172a;}.h-sub{font-size:11px;color:#888;margin-top:2px;}
+.h-user{font-size:11px;color:#888;}.h-user strong{color:#0f172a;}
+.h-btn{font-family:'DM Mono',monospace;font-size:10px;padding:5px 12px;border:1px solid #d8d6d0;background:#fff;color:#888;cursor:pointer;margin-left:8px;}
+.h-btn:hover{border-color:#b91c1c;color:#b91c1c;}
+.pill{display:inline-block;font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;border:1px solid;margin-left:3px;}
+.pill-b{background:#e8f0fc;color:#1a56db;border-color:#b3ccf5;}.pill-g{background:#e6f4ee;color:#0a7c4e;border-color:#b6dfcd;}.pill-o{background:#fdf3e6;color:#b45309;border-color:#f5d5a0;}
+.tabbar{background:#fff;border-bottom:1px solid #d0cfc8;display:flex;padding:0 18px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.tab{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;padding:10px 12px;border:none;background:none;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab:hover{color:#333;}.tab.act{color:#0f172a;border-bottom-color:#0f172a;}
+.pane{display:none;padding:16px 18px;}.pane.act{display:block;}
+.sec{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.13em;color:#888;margin:14px 0 7px;padding-bottom:4px;border-bottom:1px solid #e0ded8;}.sec:first-child{margin-top:0;}
+.sec-title{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 3px;letter-spacing:-.01em;}
+.krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px;margin-bottom:12px;}
+.kcard{background:#fff;border:1px solid #d8d6d0;padding:11px 13px;position:relative;}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,#333);}
+.klbl{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:#888;margin-bottom:4px;}
+.kval{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:#0f172a;line-height:1;}
+.ksub{font-size:10px;color:#888;margin-top:3px;}
+.kdelta{font-family:'DM Mono',monospace;font-size:10px;margin-top:2px;}
+.dpos{color:#0a7c4e;}.dneg{color:#b91c1c;}.dwarn{color:#b45309;}
+.rag{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.rag-g{background:#0a7c4e;box-shadow:0 0 0 2px rgba(10,124,78,.2);}.rag-a{background:#b45309;box-shadow:0 0 0 2px rgba(180,83,9,.2);}.rag-r{background:#b91c1c;box-shadow:0 0 0 2px rgba(185,28,28,.2);}
+.kcard.status-g{background:#f0faf4;border-color:#b6dfcd;}.kcard.status-a{background:#fefbf3;border-color:#f5d5a0;}.kcard.status-r{background:#fef5f5;border-color:#fecaca;}
+/* Gap indicator */
+.gap-bar{display:flex;align-items:center;gap:4px;margin-top:4px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;}
+.gap-bar .arrow{font-size:14px;line-height:1;}
+.gap-bar.gap-g{color:#0a7c4e;}.gap-bar.gap-a{color:#b45309;}.gap-bar.gap-r{color:#b91c1c;}
+.gap-chip{display:inline-block;padding:2px 6px;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:#fff;margin-top:3px;}
+.gap-chip.r{background:#b91c1c;}.gap-chip.a{background:#b45309;}.gap-chip.g{background:#0a7c4e;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-bottom:11px;}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr;}}
+.ccard{background:#fff;border:1px solid #d8d6d0;padding:13px 15px;margin-bottom:11px;}
+.ctitle{font-size:12px;font-weight:600;color:#0f172a;margin-bottom:2px;}
+.csub{font-size:10px;color:#888;margin-bottom:10px;}
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;}
+.dtbl th{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:#888;border-bottom:1px solid #d8d6d0;padding:6px 10px;text-align:right;}
+.dtbl th:first-child{text-align:left;padding-left:12px;}
+.dtbl td{padding:7px 10px;border-bottom:1px solid #eee;color:#555;text-align:right;}
+.dtbl td:first-child{text-align:left;color:#0f172a;font-weight:500;padding-left:12px;}
+.dtbl tr.tot td{background:#f8fafc;font-weight:600;border-top:1px solid #d0cfc8;}
+.dtbl tr:hover td{background:#fafaf8;}
+.hi{color:#0a7c4e;font-weight:600;}.lo{color:#b91c1c;font-weight:600;}.mid{color:#b45309;font-weight:600;}
+.bg-g{background:#e6f4ee !important;}.bg-r{background:#fef2f2 !important;}.bg-a{background:#fdf3e6 !important;}
+.callout{border-left:3px solid var(--cc,#64748b);background:var(--cb,#f8fafc);padding:10px 14px;font-size:11px;color:#475569;margin-bottom:11px;line-height:1.65;}
+.callout strong{color:#0f172a;}
+.callout.blue{--cc:#1a56db;--cb:#eef3fc;}.callout.teal{--cc:#0a7c4e;--cb:#e6f4ee;}.callout.amber{--cc:#b45309;--cb:#fdf3e6;}.callout.red{--cc:#b91c1c;--cb:#fef2f2;}.callout.dark{--cc:#1e293b;--cb:#f1f5f9;}
+.divider{background:#0f172a;color:#fff;padding:7px 14px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 11px;}
+.ph{background:#f0efe8;border:2px dashed #ccc9be;padding:28px;text-align:center;color:#888;font-size:12px;margin-bottom:11px;}
+.ph h4{color:#0f172a;font-size:13px;margin-bottom:4px;font-weight:600;}
+.ch{position:relative;height:220px;margin:6px 0;}.ch-sm{height:160px;}.ch-lg{height:280px;}
+.ctrl{margin-bottom:8px;}
+.ctrl label{display:block;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:2px;}
+.ctrl input,.ctrl select{font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;border:1px solid #d8d6d0;width:100%;background:#fff;}
+.ctrl input[type=checkbox]{width:auto;margin-right:6px;}
+.toggle{display:flex;gap:4px;margin-bottom:8px;}
+.toggle-btn{padding:5px 12px;font-family:'DM Mono',monospace;font-size:10px;border:1px solid #d8d6d0;background:#fff;cursor:pointer;color:#888;}
+.toggle-btn.on{background:#0f172a;color:#fff;border-color:#0f172a;}
+/* Forecast */
+.fc-card{background:#fff;border:1px solid #d8d6d0;margin-bottom:6px;overflow:hidden;}
+.fc-card-hd{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.fc-card-hd:hover{background:#fafaf8;}
+.fc-card-hd .fc-name{font-size:12px;font-weight:600;color:#0f172a;}
+.fc-card-hd .fc-mini{font-family:'DM Mono',monospace;font-size:10px;color:#888;display:flex;gap:12px;}
+.fc-card-bd{display:none;padding:0 14px 14px;border-top:1px solid #eee;}
+.fc-card.open .fc-card-bd{display:block;}
+.fc-card .fc-arrow{transition:transform .15s;font-size:10px;color:#888;}
+.fc-card.open .fc-arrow{transform:rotate(90deg);}
+.fc-wk-hdr{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:6px 8px;text-align:center;}
+.fc-wk-actual{background:#e6f4ee;color:#0a7c4e;}
+.fc-wk-forecast{background:#eef3fc;color:#1a56db;}
+.fc-inp{font-family:'DM Mono',monospace;font-size:11px;padding:3px 6px;border:1px solid #d8d6d0;width:72px;text-align:right;background:#fff;}
+.fc-inp:disabled{background:#f5f5f0;color:#888;border-color:#eee;}
+.fc-inp:focus{border-color:#1a56db;outline:none;}
+.fc-calc{font-family:'DM Mono',monospace;font-size:11px;color:#888;text-align:right;padding:3px 6px;}
+.fc-fixed-row{display:grid;grid-template-columns:120px repeat(4,1fr) 90px;gap:4px;align-items:center;margin-bottom:3px;}
+.fc-fixed-lbl{font-family:'DM Mono',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.06em;}
+.fc-set-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.fc-set-item label{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#888;display:block;margin-bottom:2px;}
+.fc-set-item input{font-family:'DM Mono',monospace;font-size:11px;padding:3px 6px;border:1px solid #d8d6d0;width:100%;text-align:right;}
+.fc-monthly{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:#0f172a;text-align:right;padding:3px 6px;}
+/* Control Panel */
+.cp-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;display:none;align-items:flex-start;justify-content:flex-end;}
+.cp-overlay.open{display:flex;}
+.cp-panel{width:420px;max-width:92vw;height:100vh;background:#fff;border-left:1px solid #d8d6d0;overflow-y:auto;box-shadow:-4px 0 24px rgba(0,0,0,.12);animation:cpSlide .2s ease;}
+@keyframes cpSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.cp-hdr{padding:16px 20px;border-bottom:1px solid #d8d6d0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.cp-hdr h3{font-size:14px;font-weight:700;color:#0f172a;margin:0;}
+.cp-close{background:none;border:none;font-size:18px;cursor:pointer;color:#888;padding:4px 8px;}
+.cp-close:hover{color:#b91c1c;}
+.cp-sec{padding:14px 20px;border-bottom:1px solid #eee;}
+.cp-sec-title{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#888;margin-bottom:8px;}
+.cp-user{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f0;}
+.cp-user:last-child{border:none;}
+.cp-avatar{width:32px;height:32px;border-radius:50%;background:#1a56db;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0;}
+.cp-name{font-size:12px;font-weight:600;color:#0f172a;}
+.cp-email{font-size:10px;color:#888;font-family:'DM Mono',monospace;}
+.cp-status{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cp-online{background:#0a7c4e;box-shadow:0 0 0 2px rgba(10,124,78,.25);}
+.cp-offline{background:#d8d6d0;}
+.cp-away{background:#b45309;box-shadow:0 0 0 2px rgba(180,83,9,.2);}
+.cp-time{font-family:'DM Mono',monospace;font-size:9px;color:#888;margin-left:auto;white-space:nowrap;}
+.cp-input{width:100%;padding:8px 10px;border:1px solid #d8d6d0;font-family:'DM Sans',sans-serif;font-size:12px;margin-bottom:6px;}
+.cp-input:focus{border-color:#1a56db;outline:none;}
+.cp-btn{padding:8px 16px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;}
+.cp-btn-primary{background:#0f172a;color:#fff;}.cp-btn-primary:hover{background:#333;}
+.cp-btn-outline{background:#fff;color:#0f172a;border:1px solid #d8d6d0;}.cp-btn-outline:hover{border-color:#0f172a;}
+.cp-btn-danger{background:#fff;color:#b91c1c;border:1px solid #fecaca;}.cp-btn-danger:hover{background:#fef2f2;}
+.cp-log{font-family:'DM Mono',monospace;font-size:10px;color:#555;line-height:1.7;}
+.cp-log .ts{color:#888;margin-right:6px;}
+.cp-badge{display:inline-block;padding:2px 6px;font-family:'DM Mono',monospace;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-left:6px;}
+.cp-badge-admin{background:#e8f0fc;color:#1a56db;}.cp-badge-viewer{background:#f5f5f0;color:#888;}
 </style>
 </head>
 <body>
 
-<!-- ═══ AUTH SCREEN ═══ -->
+<!-- ═══ AUTH ═══ -->
 <div id="auth-screen" class="auth-screen">
   <div class="auth-box">
     <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Hugo Technologies</div>
-    <div style="font-size:20px;font-weight:700;color:#111;margin-bottom:3px;">Billing Portal</div>
-    <div style="font-size:12px;color:#999;margin-bottom:24px;">Confidential</div>
+    <div style="font-size:20px;font-weight:700;color:#111;margin-bottom:3px;">CX Dashboard</div>
+    <div style="font-size:12px;color:#999;margin-bottom:24px;">Confidential — authorised access only</div>
     <button onclick="googleSignIn()" style="width:100%;padding:12px;background:#fff;border:2px solid #eee;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;color:#333;">
       <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.77-4.59l-7.98-6.19A23.99 23.99 0 000 24c0 3.77.9 7.35 2.56 10.56l7.97-5.97z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.97C6.51 42.62 14.62 48 24 48z"/></svg>
       Sign in with Google
     </button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><div style="flex:1;height:1px;background:#eee"></div><span style="font-size:10px;color:#bbb;font-family:'DM Mono',monospace">OR</span><div style="flex:1;height:1px;background:#eee"></div></div>
     <input id="auth-email" type="email" placeholder="Email address">
-    <input id="auth-pw" type="password" placeholder="Password">
-    <input id="auth-pw2" type="password" placeholder="Confirm password" style="display:none;">
-    <div id="pw-rules" style="display:none;text-align:left;font-size:10px;color:#888;margin-bottom:8px;line-height:1.6;padding:0 4px;">
-      <span id="pr-len" style="color:#dc2626">&bull; Min 8 characters</span><br>
-      <span id="pr-up" style="color:#dc2626">&bull; 1 uppercase letter</span><br>
-      <span id="pr-lo" style="color:#dc2626">&bull; 1 lowercase letter</span><br>
-      <span id="pr-sp" style="color:#dc2626">&bull; 1 special character</span>
-    </div>
+    <input id="auth-pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')authAction()">
     <div id="auth-err" class="auth-err"></div>
-    <div id="auth-msg" class="auth-ok"></div>
-    <button class="auth-btn" onclick="authAction()" id="auth-action-btn">Sign In</button>
-    <div style="margin-top:12px;">
-      <span class="auth-link" id="toggle-link" onclick="toggleMode('signup')">Create account</span>
-      <span style="color:#ddd;margin:0 8px;">|</span>
-      <span class="auth-link" onclick="resetPw()">Forgot password?</span>
+    <button class="auth-btn" onclick="authAction()">Sign In</button>
+    <div style="font-size:10px;color:#bbb;margin-top:20px;">@hugotech.co accounts only</div>
+  </div>
+</div>
+
+<!-- ═══ CONTROL PANEL ═══ -->
+<div id="cp-overlay" class="cp-overlay" onclick="if(event.target===this)cpClose()">
+  <div class="cp-panel">
+    <div class="cp-hdr">
+      <h3>Control Panel</h3>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span id="cp-online-count" style="font-family:'DM Mono',monospace;font-size:10px;color:#0a7c4e;"></span>
+        <button class="cp-close" onclick="cpClose()">✕</button>
+      </div>
     </div>
-    <div style="font-size:10px;color:#bbb;margin-top:20px;">hugoinc.com</div>
-  </div>
-</div>
 
-<!-- ═══ FORCE PASSWORD RESET SCREEN ═══ -->
-<div id="reset-screen" class="auth-screen" style="display:none;">
-  <div class="auth-box">
-    <div style="font-size:40px;margin-bottom:12px;">&#128274;</div>
-    <div style="font-size:20px;font-weight:700;color:#111;margin-bottom:4px;">Set Your Password</div>
-    <div style="font-size:12px;color:#888;margin-bottom:20px;">Your account was created with a temporary password. Please set a new one to continue.</div>
-    <input id="reset-pw1" type="password" placeholder="New password">
-    <input id="reset-pw2" type="password" placeholder="Confirm new password" onkeydown="if(event.key==='Enter')doForceReset()">
-    <div id="reset-rules" style="text-align:left;font-size:10px;color:#888;margin-bottom:8px;line-height:1.6;padding:0 4px;">
-      <span id="rr-len" style="color:#dc2626">&bull; Min 8 characters</span><br>
-      <span id="rr-up" style="color:#dc2626">&bull; 1 uppercase letter</span><br>
-      <span id="rr-lo" style="color:#dc2626">&bull; 1 lowercase letter</span><br>
-      <span id="rr-sp" style="color:#dc2626">&bull; 1 special character</span>
+    <!-- Online Users -->
+    <div class="cp-sec">
+      <div class="cp-sec-title">Users Online Now</div>
+      <div id="cp-online-list"><div style="font-size:11px;color:#888;">Connecting...</div></div>
     </div>
-    <div id="reset-err" class="auth-err"></div>
-    <button class="auth-btn" onclick="doForceReset()">Set Password &amp; Continue</button>
-  </div>
-</div>
 
-<!-- ═══ INVITE MODAL ═══ -->
-<div id="invite-modal" class="modal-bg">
-  <div class="modal">
-    <h3>Invite a colleague</h3>
-    <div style="font-size:11px;color:#888;margin-bottom:12px;">Must be @hugotech.co or a client domain (e.g. @gifthealth.com)</div>
-    <input id="invite-email" type="email" placeholder="colleague@hugotech.co">
-    <button class="auth-btn" onclick="sendInvite()">Send Invite</button>
-    <div id="invite-err" class="auth-err"></div>
-    <div id="invite-ok" class="auth-ok"></div>
-    <span class="modal-close" onclick="document.getElementById('invite-modal').classList.remove('show')">Close</span>
-  </div>
-</div>
-
-<!-- ═══ PENDING APPROVAL SCREEN ═══ -->
-<div id="pending-screen" class="auth-screen" style="display:none;">
-  <div class="auth-box">
-    <div style="font-size:40px;margin-bottom:16px;">&#128274;</div>
-    <div style="font-size:20px;font-weight:700;color:#111;margin-bottom:6px;">Access Request Received</div>
-    <div style="font-size:13px;color:#555;margin-bottom:24px;line-height:1.6;">Your request for access is being reviewed. You will be able to view the billing report once an administrator approves your account.</div>
-    <div style="font-size:12px;color:#555;padding:12px 16px;background:#fffbeb;border-left:3px solid #f5cf46;text-align:left;margin-bottom:20px;line-height:1.6;">
-      <strong>Need faster access?</strong><br>
-      Please contact your administrator or email <strong>taire.avbovbo@hugotech.co</strong> for more details.
+    <!-- Recent Activity -->
+    <div class="cp-sec">
+      <div class="cp-sec-title">Recent Activity</div>
+      <div id="cp-activity" class="cp-log" style="max-height:150px;overflow-y:auto;"></div>
     </div>
-    <div style="font-size:11px;color:#888;margin-bottom:16px;" id="pending-email-display"></div>
-    <button class="auth-btn" onclick="signOut()" style="background:#555;">Sign Out</button>
-  </div>
-</div>
 
-<div id="tooltip"></div>
+    <!-- Invite User -->
+    <div class="cp-sec">
+      <div class="cp-sec-title">Invite User</div>
+      <div style="margin-bottom:6px;font-size:10px;color:#888;">Send dashboard access to a @hugotech.co team member</div>
+      <input id="cp-invite-email" class="cp-input" type="email" placeholder="name@hugotech.co">
+      <input id="cp-invite-name" class="cp-input" type="text" placeholder="Display name (optional)">
+      <div style="display:flex;gap:6px;">
+        <select id="cp-invite-role" class="cp-input" style="width:auto;">
+          <option value="viewer">Viewer</option>
+          <option value="editor">Editor</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button class="cp-btn cp-btn-primary" onclick="cpInvite()">Send Invite</button>
+      </div>
+      <div id="cp-invite-msg" style="font-size:10px;margin-top:4px;min-height:14px;"></div>
+    </div>
 
-<!-- ═══ MAIN APP (hidden until auth) ═══ -->
-<div id="main-app" style="display:none;">
+    <!-- Registered Users -->
+    <div class="cp-sec">
+      <div class="cp-sec-title">Registered Users</div>
+      <div id="cp-users-list"></div>
+    </div>
 
-<div class="header">
-  <div class="h-eyebrow">Hugo Technologies &middot; Confidential</div>
-  <h1 class="h-title"><span>Billing Report</span></h1>
-  <div class="h-period" id="h-period"></div>
-  <div class="month-bar" id="month-bar"></div>
-  <div class="h-stats" id="h-stats"></div>
-  <div class="h-user-bar">
-    <div class="h-user">Signed in as <strong id="h-user-email"></strong></div>
-    <div class="h-actions">
-      <button class="h-btn" onclick="document.getElementById('invite-modal').classList.add('show')">Invite</button>
-      <button class="h-btn" onclick="changePw()">Change Password</button>
-      <button class="h-btn danger" onclick="signOut()">Sign Out</button>
+    <!-- Access Settings -->
+    <div class="cp-sec">
+      <div class="cp-sec-title">Access Settings</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="checkbox" id="cp-domain-lock" checked disabled>
+        <label for="cp-domain-lock" style="font-size:11px;color:#555;">Restrict to @hugotech.co domain</label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="checkbox" id="cp-track-presence" checked onchange="cpTogglePresence(this.checked)">
+        <label for="cp-track-presence" style="font-size:11px;color:#555;">Track online presence</label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="cp-log-activity" checked>
+        <label for="cp-log-activity" style="font-size:11px;color:#555;">Log user activity</label>
+      </div>
+    </div>
+
+    <!-- Export / Danger -->
+    <div class="cp-sec" style="border-bottom:none;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="cp-btn cp-btn-outline" onclick="cpExportLog()">Export Activity Log</button>
+        <button class="cp-btn cp-btn-danger" onclick="cpClearLog()">Clear Log</button>
+      </div>
     </div>
   </div>
 </div>
-
-<div class="tabbar">
-  <button class="tab act" onclick="sw('eq',this)">Billing Equation</button>
-  <button class="tab" onclick="sw('summary',this)">Invoice Summary</button>
-  <button class="tab" onclick="sw('recon',this)">Hour Reconciliation</button>
-  <button class="tab" onclick="sw('calendar',this)">Calendar View</button>
-  <button class="tab" onclick="sw('defs',this)">Definitions</button>
-</div>
-
-<div class="page-body">
-<div id="inv-status-area"></div>
-<div id="p-eq" class="pane act">
-<div class="callout blue"><strong>Purpose:</strong> This report clarifies how invoice hours relate to Assembled (workforce monitoring) hours, reconciles every line item, and provides a calendar view of training vs. production.</div>
-<div class="summary-box" id="eq-summary"></div>
-<div class="sec">What GiftHealth pays for</div>
-<div class="eq-box" id="eq-pays"></div>
-<div class="sec">What Hugo actually provides</div>
-<div class="eq-box" id="eq-provides"></div>
-<div class="sec">Three scenarios &mdash; with real examples</div>
-<div id="eq-scenarios"></div>
-</div>
-<div id="p-summary" class="pane"><div id="summary-content"></div></div>
-<div id="p-recon" class="pane">
-<div class="callout green"><strong>Bottom line:</strong> For every line item, Hugo either invoices exactly what was contracted or invoices less than the total hours provided.</div>
-<div class="card"><div style="padding:12px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:12px;font-weight:600">Invoiced vs. Assembled</div><div style="font-size:10px;color:#888">Hover bars for details</div></div><div class="bar-legend"><span class="l-p">Production</span><span class="l-t">Training</span><span class="l-a">Assembled</span><span class="l-b">Buffer</span></div></div><div id="recon-box"></div></div>
-</div>
-<div id="p-calendar" class="pane">
-<div class="callout blue"><strong>Calendar view:</strong> <span style="background:#dcfce7;padding:1px 6px;font-weight:600;color:#166534">Production</span> = in Assembled. <span style="background:#dbeafe;padding:1px 6px;font-weight:600;color:#1e40af">Training</span> = NOT in Assembled.</div>
-<div id="cal-content"></div>
-<div class="cal-legend"><span><span class="cal-legend-dot p"></span> Production</span><span><span class="cal-legend-dot t"></span> Training</span><span><span class="cal-legend-dot e"></span> Not onboarded</span></div>
-</div>
-<div id="p-defs" class="pane">
-<div class="card"><div style="padding:12px 16px;border-bottom:1px solid #eee;font-size:12px;font-weight:600">Key terms &amp; billing definitions</div>
-<div class="def-grid">
-<div class="def-item"><div class="def-term">Maximum contracted hours</div><div class="def-desc">Max hours Hugo can bill. Billable agents &times; working days &times; hrs/day.</div></div>
-<div class="def-item"><div class="def-term">Training hours</div><div class="def-desc">Hours in ~2-week training. <strong>Not tracked in Assembled.</strong></div></div>
-<div class="def-item"><div class="def-term">Production hours</div><div class="def-desc">Hours contracted agents spend in production after training. Tracked in Assembled.</div></div>
-<div class="def-item"><div class="def-term">Total invoiced hours</div><div class="def-desc">Training (contracted) + Production (contracted). What the client pays for.</div></div>
-<div class="def-item"><div class="def-term">Assembled hours</div><div class="def-desc">Hours in Assembled (workforce monitoring). Only production. Nesting is part of training. Includes contracted AND buffer. Includes overtime.</div></div>
-<div class="def-item"><div class="def-term">Buffer agents</div><div class="def-desc">Extra agents for SLA coverage. Never invoiced. Production appears in Assembled.</div></div>
-<div class="def-item"><div class="def-term">Overtime hours</div><div class="def-desc">Extra hours requested by client. 20% premium.</div></div>
-<div class="def-item"><div class="def-term">Weekend hours</div><div class="def-desc">Weekend shifts at 1.2x premium. Added to billing from March 2026 after compliance review.</div></div>
-</div></div>
-<div class="sec-sm">Why invoiced &ne; assembled</div>
-<div class="card"><div style="overflow-x:auto;padding:4px 0"><table class="dtbl"><thead><tr><th style="width:35%">Scenario</th><th>Relationship</th><th>Why</th></tr></thead><tbody>
-<tr><td>Steady-state, no training</td><td class="pos">Invoiced &lt; Assembled</td><td style="font-size:11px">Buffer agents add hrs to Assembled</td></tr>
-<tr><td>Mix of production + training</td><td>Invoiced &cong; Assembled</td><td style="font-size:11px">Training hrs not in Assembled, but Assembled reflects contracted + buffer. Can be confusing.</td></tr>
-<tr><td>All agents in training</td><td class="neg">Invoiced &gt; Assembled</td><td style="font-size:11px">Assembled = 0 (training not tracked)</td></tr>
-</tbody></table></div></div>
-</div>
-</div>
-</div>
-
-<!-- Superadmin panel -->
-<div id="admin-panel" class="admin-panel">
-  <div class="admin-panel-head"><span>Admin Panel</span><span id="admin-count">0 online</span></div>
-  <div class="admin-panel-body">
-    <div id="admin-pending"></div>
-    <div id="admin-users"></div>
-    <div id="admin-live"></div>
-    <div class="admin-section" style="margin-top:10px;">Invoice Statuses</div>
-    <div id="admin-invoices" style="font-size:10px;color:#ccc;"></div>
-    <div class="admin-section" style="margin-top:10px;">Bulk Create Accounts</div>
-    <textarea id="bulk-emails" placeholder="One email per line" style="width:100%;height:60px;background:#222;border:1px solid #444;color:#ccc;font-family:'DM Mono',monospace;font-size:10px;padding:6px;resize:vertical;margin:6px 0;"></textarea>
-    <button class="admin-approve yes" style="width:100%;padding:6px;" onclick="bulkCreate()">Create with default password</button>
-    <div id="bulk-status" style="font-size:10px;color:#888;margin-top:4px;max-height:80px;overflow-y:auto;"></div>
-  </div>
-</div>
-
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// ═══ FIREBASE INIT ═══
-firebase.initializeApp({
-  apiKey:"AIzaSyCUQDYoF7ktsSBxoaCVg2-mfciS3gFJVHM",
-  authDomain:"hugo-billing.firebaseapp.com",
-  databaseURL:"https://hugo-billing-default-rtdb.firebaseio.com",
-  projectId:"hugo-billing",
-  storageBucket:"hugo-billing.firebasestorage.app",
-  messagingSenderId:"193864262502",
-  appId:"1:193864262502:web:1aae9577e88ae24451dea7"
-});
-const auth=firebase.auth(), db=firebase.firestore(), rtdb=firebase.database();
-const SUPER='taire.avbovbo@hugotech.co';
-const ADMINS=['taire.avbovbo@hugotech.co','funmi@hugotech.co'];
-function isAdmin(e){return ADMINS.includes(e.toLowerCase());}
+<script>
+// Firebase Auth + Realtime Database
+firebase.initializeApp({apiKey:"AIzaSyCUQDYoF7ktsSBxoaCVg2-mfciS3gFJVHM",authDomain:"hugo-billing.firebaseapp.com",projectId:"hugo-billing",databaseURL:"https://hugo-billing-default-rtdb.firebaseio.com"});
+const auth=firebase.auth();
+const db=firebase.database();
 const HUGO_DOMAIN='hugotech.co';
-const CLIENTS={gifthealth:{name:'GiftHealth',domains:['gifthealth.com'],approvers:['madi@gifthealth.com']}};
-const DEFAULT_STATUSES={feb:'draft',mar:'draft'};
-let invoiceStatuses={};
-function isApprover(email){return Object.values(CLIENTS).some(c=>c.approvers&&c.approvers.includes(email.toLowerCase()));}
-function isClient(email){return!isHugo(email)&&!isAdmin(email);}
-const DEFAULT_PW='GHrocks2026!';
-function getDomain(e){return e.split('@')[1]||'';}
-function isHugo(e){return getDomain(e)===HUGO_DOMAIN;}
-function getClientAccess(e){if(isHugo(e))return Object.keys(CLIENTS);const d=getDomain(e);return Object.keys(CLIENTS).filter(c=>CLIENTS[c].domains.includes(d));}
-function validDomain(e){const d=getDomain(e);return[HUGO_DOMAIN,...Object.values(CLIENTS).flatMap(c=>c.domains)].includes(d);}
+function getDomain(e){return (e||'').split('@')[1]||'';}
+function validDomain(e){return getDomain(e)===HUGO_DOMAIN;}
+let currentUser=null;
 
-// Password validation
-function checkPw(pw){return{len:pw.length>=8,up:/[A-Z]/.test(pw),lo:/[a-z]/.test(pw),sp:/[^a-zA-Z0-9]/.test(pw)};}
-function updatePwRules(pw,prefix){const c=checkPw(pw);['len','up','lo','sp'].forEach(k=>{const el=document.getElementById(prefix+'-'+k);if(el)el.style.color=c[k]?'#0a7c4e':'#dc2626';});}
-function pwValid(pw){const c=checkPw(pw);return c.len&&c.up&&c.lo&&c.sp;}
-
-// Live password rule checking
-document.addEventListener('input',e=>{
-  if(e.target.id==='auth-pw'&&authMode==='signup')updatePwRules(e.target.value,'pr');
-  if(e.target.id==='reset-pw1')updatePwRules(e.target.value,'rr');
-});
-
-let authMode='login';
-function toggleMode(m){
-  authMode=m==='login'?'login':'signup';
-  const isSignup=authMode==='signup';
-  document.getElementById('auth-action-btn').textContent=isSignup?'Create Account':'Sign In';
-  document.getElementById('auth-pw2').style.display=isSignup?'block':'none';
-  document.getElementById('pw-rules').style.display=isSignup?'block':'none';
-  document.getElementById('toggle-link').textContent=isSignup?'Back to sign in':'Create account';
-  document.getElementById('toggle-link').setAttribute('onclick',isSignup?"toggleMode('login')":"toggleMode('signup')");
-  document.getElementById('auth-err').textContent='';
-  document.getElementById('auth-msg').textContent='';
-}
-
-// Google Sign-In
 function googleSignIn(){
   const provider=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).then(result=>{
-    const e=result.user.email;
-    if(!validDomain(e)){auth.currentUser.delete();document.getElementById('auth-err').textContent='Access restricted to Hugo and client domains.';return;}
-    // Ensure Firestore doc exists
-    db.collection('users').doc(result.user.uid).get().then(doc=>{
-      if(!doc.exists){
-        const isAdm=isAdmin(e);
-        db.collection('users').doc(result.user.uid).set({email:e,domain:getDomain(e),approved:isAdm,forceReset:false,created:firebase.firestore.FieldValue.serverTimestamp()});
-      }
-    });
+  auth.signInWithPopup(provider).then(r=>{
+    if(!validDomain(r.user.email)){auth.currentUser.delete();document.getElementById('auth-err').textContent='Access restricted to @hugotech.co';return;}
   }).catch(x=>{document.getElementById('auth-err').textContent=x.message;});
 }
-
 function authAction(){
-  const e=document.getElementById('auth-email').value.trim(),p=document.getElementById('auth-pw').value,err=document.getElementById('auth-err');
-  err.textContent='';document.getElementById('auth-msg').textContent='';
-  if(!e||!p){err.textContent='Please enter email and password.';return;}
-  if(!validDomain(e)){err.textContent='Access restricted to Hugo and client domains.';return;}
-  if(authMode==='signup'){
-    const p2=document.getElementById('auth-pw2').value;
-    if(!pwValid(p)){err.textContent='Password does not meet requirements.';return;}
-    if(p!==p2){err.textContent='Passwords do not match.';return;}
-    auth.createUserWithEmailAndPassword(e,p).then(cred=>{
-      const isAdm=isAdmin(e);
-      db.collection('users').doc(cred.user.uid).set({email:e,domain:getDomain(e),approved:isAdm,forceReset:false,created:firebase.firestore.FieldValue.serverTimestamp()});
-    }).catch(x=>err.textContent=x.message);
-  } else {
-    auth.signInWithEmailAndPassword(e,p).catch(x=>err.textContent=x.message);
-  }
+  const e=document.getElementById('auth-email').value,p=document.getElementById('auth-pw').value;
+  if(!validDomain(e)){document.getElementById('auth-err').textContent='Must be @hugotech.co';return;}
+  auth.signInWithEmailAndPassword(e,p).catch(x=>{document.getElementById('auth-err').textContent=x.message;});
 }
-function resetPw(){
-  const e=document.getElementById('auth-email').value.trim();
-  if(!e){document.getElementById('auth-err').textContent='Enter your email first.';return;}
-  auth.sendPasswordResetEmail(e).then(()=>{document.getElementById('auth-msg').textContent='Password reset email sent.';}).catch(x=>document.getElementById('auth-err').textContent=x.message);
-}
-function changePw(){
-  const np=prompt('Enter new password (min 8 chars, 1 upper, 1 lower, 1 special):');
-  if(!np)return;
-  if(!pwValid(np)){alert('Password must be 8+ chars with 1 uppercase, 1 lowercase, and 1 special character.');return;}
-  auth.currentUser.updatePassword(np).then(()=>alert('Password updated.')).catch(x=>alert(x.message));
-}
-function doForceReset(){
-  const p1=document.getElementById('reset-pw1').value,p2=document.getElementById('reset-pw2').value,err=document.getElementById('reset-err');
-  err.textContent='';
-  if(!pwValid(p1)){err.textContent='Password does not meet requirements.';return;}
-  if(p1!==p2){err.textContent='Passwords do not match.';return;}
-  auth.currentUser.updatePassword(p1).then(()=>{
-    db.collection('users').doc(auth.currentUser.uid).update({forceReset:false});
-    document.getElementById('reset-screen').style.display='none';
-    document.getElementById('main-app').style.display='block';
-    document.getElementById('h-user-email').textContent=auth.currentUser.email;
-    setupPresence(auth.currentUser);
-    render();
-  }).catch(x=>err.textContent=x.message);
-}
-function signOut(){auth.signOut();}
-function sendInvite(){
-  const e=document.getElementById('invite-email').value.trim().toLowerCase(),err=document.getElementById('invite-err'),ok=document.getElementById('invite-ok');
-  err.textContent='';ok.textContent='';
-  if(!validDomain(e)){err.textContent='Must be @hugotech.co or a client domain.';return;}
-  db.collection('invites').add({email:e,invitedBy:auth.currentUser.email,at:firebase.firestore.FieldValue.serverTimestamp()}).then(()=>{ok.textContent='Invite recorded for '+e;document.getElementById('invite-email').value='';}).catch(x=>err.textContent=x.message);
-}
-
-// Bulk create accounts (superadmin)
-async function bulkCreate(){
-  const txt=document.getElementById('bulk-emails').value.trim();
-  const emails=txt.split('\n').map(e=>e.trim().toLowerCase()).filter(e=>e&&e.includes('@'));
-  const status=document.getElementById('bulk-status');
-  if(!emails.length){status.innerHTML='<span style="color:#f87171">No valid emails found.</span>';return;}
-  status.innerHTML='<span style="color:#f5cf46">Creating accounts...</span>';
-  // Use secondary app to avoid signing out current user
-  let secondaryApp;
-  try{secondaryApp=firebase.app('secondary');}catch(e){
-    secondaryApp=firebase.initializeApp({apiKey:"AIzaSyCUQDYoF7ktsSBxoaCVg2-mfciS3gFJVHM",authDomain:"hugo-billing.firebaseapp.com",projectId:"hugo-billing"},'secondary');
-  }
-  const secondaryAuth=secondaryApp.auth();
-  let results=[];
-  for(const email of emails){
-    if(!validDomain(email)){results.push('<span style="color:#f87171">'+email+' - invalid domain</span>');continue;}
-    try{
-      const cred=await secondaryAuth.createUserWithEmailAndPassword(email,DEFAULT_PW);
-      await db.collection('users').doc(cred.user.uid).set({email:email,domain:getDomain(email),approved:true,forceReset:true,createdBy:auth.currentUser.email,created:firebase.firestore.FieldValue.serverTimestamp()});
-      await secondaryAuth.signOut();
-      results.push('<span style="color:#22c55e">'+email+' - created (pw: '+DEFAULT_PW+')</span>');
-    }catch(x){results.push('<span style="color:#f87171">'+email+' - '+x.message+'</span>');}
-  }
-  status.innerHTML=results.join('<br>');
-  document.getElementById('bulk-emails').value='';
-}
-// ═══ PRESENCE ═══
-function setupPresence(user){
-  const uid=user.uid,ref=rtdb.ref('presence/'+uid);
-  ref.set({email:user.email,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP});
-  ref.onDisconnect().set({email:user.email,online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});
-  db.collection('activity').add({email:user.email,action:'view',at:firebase.firestore.FieldValue.serverTimestamp()});
-  // Superadmin: listen to pending users + presence
-  if(isAdmin(user.email)){
-    document.getElementById('admin-panel').classList.add('show');
-    // Pending users
-    db.collection('users').where('approved','==',false).onSnapshot(snap=>{
-      const el=document.getElementById('admin-pending');
-      if(snap.empty){el.innerHTML='';return;}
-      let h='<div class="admin-section">Pending Approval</div>';
-      snap.forEach(doc=>{
-        const d=doc.data();
-        h+='<div class="admin-user"><div class="admin-dot pending"></div><div class="admin-email">'+d.email+'</div><button class="admin-approve yes" onclick="approveUser(\''+doc.id+'\',true)">Approve</button><button class="admin-approve no" onclick="approveUser(\''+doc.id+'\',false)">Deny</button></div>';
-      });
-      el.innerHTML=h;
-    });
-    // All registered users
-    db.collection('users').where('approved','==',true).onSnapshot(snap=>{
-      const el=document.getElementById('admin-users');
-      if(snap.empty){el.innerHTML='';return;}
-      let h='<div class="admin-section">Registered Users ('+snap.size+')</div>';
-      snap.forEach(doc=>{
-        const d=doc.data();
-        const ll=d.lastLogin?d.lastLogin.toDate().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Never';
-        const fr=d.forceReset?'<span style="color:#f5cf46;font-size:8px;margin-left:4px;">[PW RESET]</span>':'';
-        const canRevoke=!isAdmin(d.email);
-        const revokeBtn=canRevoke?'<button class="admin-approve no" onclick="revokeUser(\''+doc.id+'\',\''+d.email+'\')" style="margin-left:4px;font-size:8px;">Revoke</button>':'';
-        h+='<div class="admin-user"><div class="admin-dot" style="background:#2563eb"></div><div class="admin-email">'+d.email+fr+'</div><div class="admin-time">'+ll+'</div>'+revokeBtn+'</div>';
-      });
-      el.innerHTML=h;
-    });
-    // Live presence
-    rtdb.ref('presence').on('value',snap=>{
-      const data=snap.val()||{};const el=document.getElementById('admin-live');
-      const users=Object.values(data).sort((a,b)=>(b.online?1:0)-(a.online?1:0));
-      let h='<div class="admin-section">Live Viewers</div>';
-      h+=users.map(u=>{
-        const t=u.lastSeen?new Date(u.lastSeen).toLocaleTimeString():'';
-        return '<div class="admin-user"><div class="admin-dot '+(u.online?'on':'off')+'"></div><div class="admin-email">'+u.email+'</div><div class="admin-time">'+t+'</div></div>';
-      }).join('');
-      el.innerHTML=h;
-      document.getElementById('admin-count').textContent=users.filter(u=>u.online).length+' online';
-    });
-  }
-}
-function approveUser(uid,approve){
-  if(approve){
-    db.collection('users').doc(uid).update({approved:true,approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:auth.currentUser.email});
-  } else {
-    db.collection('users').doc(uid).delete();
-  }
-}
-function revokeUser(uid,email){
-  if(!confirm('Revoke access for '+email+'? They will be locked out immediately.')){return;}
-  db.collection('users').doc(uid).update({approved:false,revokedAt:firebase.firestore.FieldValue.serverTimestamp(),revokedBy:auth.currentUser.email});
-}
-// ═══ AUTH STATE ═══
 auth.onAuthStateChanged(user=>{
-  if(user){
-    db.collection('users').doc(user.uid).get().then(doc=>{
-      const data=doc.data();
-      const isAdm=isAdmin(user.email);
-      if(!doc.exists){
-        db.collection('users').doc(user.uid).set({email:user.email,domain:getDomain(user.email),approved:isAdm,forceReset:false,created:firebase.firestore.FieldValue.serverTimestamp()});
-        if(!isAdm){showPending();return;}
-      } else if(!data.approved && !isAdm){
-        showPending();return;
-      } else if(data.forceReset){
-        // Show force password reset screen
-        document.getElementById('auth-screen').style.display='none';
-        document.getElementById('pending-screen').style.display='none';
-        document.getElementById('main-app').style.display='none';
-        document.getElementById('reset-screen').style.display='flex';
-        return;
-      }
-      // Approved and no force reset - show app
-      db.collection('users').doc(user.uid).update({lastLogin:firebase.firestore.FieldValue.serverTimestamp()});
-      document.getElementById('auth-screen').style.display='none';
-      document.getElementById('pending-screen').style.display='none';
-      document.getElementById('reset-screen').style.display='none';
-      document.getElementById('main-app').style.display='block';
-      document.getElementById('h-user-email').textContent=user.email;
-      setupPresence(user);
-      loadStatuses();
-    });
-  } else {
-    document.getElementById('auth-screen').style.display='flex';
-    document.getElementById('pending-screen').style.display='none';
-    document.getElementById('reset-screen').style.display='none';
-    document.getElementById('main-app').style.display='none';
-    document.getElementById('admin-panel').classList.remove('show');
+  if(user&&validDomain(user.email)){
+    currentUser=user;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+    cpSetPresence(user);
+    cpLogActivity(user.displayName||user.email,'signed in');
   }
 });
-function showPending(){
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('reset-screen').style.display='none';
-  document.getElementById('pending-screen').style.display='flex';
-  const pe=document.getElementById('pending-email-display');
-  if(pe&&auth.currentUser)pe.textContent='Signed in as '+auth.currentUser.email;
+function signOut(){
+  if(currentUser)cpClearPresence(currentUser);
+  cpLogActivity((currentUser&&currentUser.displayName)||'User','signed out');
+  auth.signOut().then(()=>{document.getElementById('auth-screen').style.display='flex';currentUser=null;});
 }
 
-// ═══ BILLING DATA (same as v4) ═══
-const DATA={gifthealth:{feb:{
-  period:'01 Feb \u2013 28 Feb 2026 \u00b7 20 working days',
-  stats:[{val:'$954,104',lbl:'Total invoiced',color:'#5eead4'},{val:'43,660',lbl:'Invoiced hours'},{val:'35,573',lbl:'Assembled (scheduled)',color:'#fbbf24'},{val:'48,853',lbl:'Total provided hours'},{val:'+11.9%',lbl:'Oversupply vs invoiced',color:'#5eead4'}],
-  summary:'Hugo provided <span class="big-num">48,853</span> total hours but only invoiced <span class="big-num">43,660</span> \u2014 a gap of <span class="big-num">5,193</span> hours <span style="color:#5eead4;font-weight:700">(11.9%)</span>',
-  summaryExp:'Invoiced hours only include production + training for the <strong style="color:#fff">contracted</strong> headcount. Hugo staffs additional "buffer" agents (368 total vs. 328 billable) and absorbs their hours. Assembled also includes buffer agents in production, which is why Assembled scheduled hours (35,573) can exceed contracted production hours (22,480). <strong style="color:#5eead4">Assembled only tracks agents in production \u2014 nesting is part of training and training hours never appear in Assembled.</strong>',
-  eqPays:{prod:22480,train:12080,ot:1138,hrs:43660,amt:'$954,104'},
-  eqProvides:{asmC:'~31,750',asmB:'~3,823',trainC:12080,trainB:1200,total:48853},
-  otherCallout:'teal',otherNote:'Steady-state production. No training in February.',
-  otherTable:'<table class="dtbl"><thead><tr><th>Workflow</th><th>Billable</th><th>Actual</th><th>Days</th><th>Hrs/Day</th><th>Invoiced Hrs</th><th>Assembled</th><th>Rate</th><th>Amount</th><th></th></tr></thead><tbody><tr><td>Gastro (Agents)</td><td>45</td><td>47</td><td>20</td><td>8</td><td>7,200</td><td class="pos">8,461</td><td>$14.75</td><td>$106,200</td><td><span class="cbadge" data-tip="2 buffer agents. Assembled 8,461 vs invoiced 7,200."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr><td>Gastro (TLs)</td><td>3</td><td>3</td><td>20</td><td>8</td><td>480</td><td class="muted">\u2014</td><td>$14.75</td><td>$7,080</td><td></td></tr><tr><td>Bot Monitoring</td><td>6</td><td>8</td><td>20</td><td>8</td><td>960</td><td class="muted">\u2014</td><td>$14.75</td><td>$14,160</td><td></td></tr><tr><td>SMM</td><td>1</td><td>1</td><td>20</td><td>1</td><td>20</td><td class="muted">\u2014</td><td>$14.75</td><td>$295</td><td></td></tr><tr><td>WFM RTA</td><td>2</td><td>2</td><td>20</td><td>7</td><td>280</td><td class="muted">\u2014</td><td>$14.75</td><td>$4,130</td><td></td></tr><tr><td>WFM Scheduler</td><td>1</td><td>1</td><td>20</td><td>8</td><td>160</td><td class="muted">\u2014</td><td>$14.75</td><td>$2,360</td><td></td></tr><tr class="sub"><td>Subtotal</td><td>58</td><td>62</td><td></td><td></td><td>9,100</td><td>8,461</td><td></td><td>$134,225</td><td></td></tr></tbody></table>',
-  lillyCallout:'<strong>February was a high-training month.</strong> Lagos launched Wave 1 (02/16), Missouri onboarded Wave 2 (prod from 02/20) and Wave 3 (training from 02/23). Click <strong>+</strong> to expand. <strong style="color:#94a3b8">Hover over <span style="background:#94a3b8;color:#fff;padding:1px 5px;font-family:DM Mono,monospace;font-size:10px">?</span> to see comments.</strong>',
-  lillyTable:'<table class="dtbl"><thead><tr><th>Workflow</th><th>Billable</th><th>Actual</th><th>Days</th><th>Training Hrs</th><th>Contracted Prod Hrs</th><th>Invoiced Hrs</th><th>Assembled</th><th>Rate</th><th>OT Hrs</th><th>OT Rate</th><th>Amount</th><th></th></tr></thead><tbody><tr class="sec-row"><td colspan="13">Agents</td></tr><tr class="expand-trigger" data-target="feb-sa"><td>Lilly SA</td><td>85</td><td>103</td><td>20</td><td class="muted">0</td><td>13,600</td><td>13,600</td><td class="pos">17,793</td><td>$14.75</td><td>839</td><td>$17.70</td><td>$215,450</td><td><span class="cbadge" data-tip="85 contracted, 103 actual. 18 buffer. Assembled exceeds invoiced by 30.8%. OT = Kwik Pen."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="feb-sa"><td>Contracted (85)</td><td></td><td></td><td>20</td><td>0</td><td>13,600</td><td style="color:#0a7c4e;font-weight:600">13,600</td><td>~14,686</td><td></td><td></td><td></td><td colspan="2">Billed</td></tr><tr class="expand-detail" id="feb-sa"><td style="color:#7c3aed">Buffer (18)</td><td></td><td></td><td>20</td><td>0</td><td>2,880</td><td style="color:#dc2626">0</td><td>~3,107</td><td></td><td></td><td></td><td colspan="2">Not billed</td></tr><tr class="expand-trigger" data-target="feb-lag"><td>Lilly Lagos</td><td>60</td><td>75</td><td>10</td><td style="color:#2563eb;font-weight:600">4,800</td><td class="muted">0</td><td>4,800</td><td class="neg">0</td><td>$13.68</td><td class="muted">0</td><td>$16.42</td><td>$65,664</td><td><span class="cbadge" data-tip="Wave 1 started 02/16. All in training. Zero Assembled. 15 buffer training (1,200 hrs) absorbed."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="feb-lag"><td>Contracted (60)</td><td></td><td></td><td>10</td><td style="color:#2563eb">4,800</td><td>0</td><td style="color:#0a7c4e;font-weight:600">4,800</td><td>0</td><td></td><td></td><td></td><td colspan="2">Billed</td></tr><tr class="expand-detail" id="feb-lag"><td style="color:#7c3aed">Buffer (15)</td><td></td><td></td><td>10</td><td style="color:#7c3aed">1,200</td><td>0</td><td style="color:#dc2626">0</td><td>0</td><td></td><td></td><td></td><td colspan="2">Not billed</td></tr><tr class="expand-trigger" data-target="feb-mo12"><td>Lilly MO W1&amp;2</td><td>75</td><td>78</td><td>20</td><td style="color:#2563eb;font-weight:600">3,120</td><td>8,880</td><td>12,000</td><td>9,319</td><td>$35.00</td><td>299</td><td>$42.00</td><td>$432,558</td><td><span class="cbadge" data-tip="W1 (45): production 20d. W2 (30): trained 13d then production 7d. Assembled captures W2 from ~02/23 only."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="feb-mo12"><td>Wave 1 (45 x 20d)</td><td></td><td></td><td>20</td><td>0</td><td>7,200</td><td style="color:#0a7c4e;font-weight:600">7,200</td><td>~7,200</td><td></td><td></td><td></td><td colspan="2">Full prod</td></tr><tr class="expand-detail" id="feb-mo12"><td>Wave 2 train (30 x 13d)</td><td></td><td></td><td>13</td><td style="color:#2563eb">3,120</td><td>0</td><td style="color:#0a7c4e;font-weight:600">3,120</td><td>0</td><td></td><td></td><td></td><td colspan="2">Not in Assembled</td></tr><tr class="expand-detail" id="feb-mo12"><td>Wave 2 prod (30 x 7d)</td><td></td><td></td><td>7</td><td>0</td><td>1,680</td><td style="color:#0a7c4e;font-weight:600">1,680</td><td>~2,119</td><td></td><td></td><td></td><td colspan="2">From ~02/23</td></tr><tr class="expand-detail" id="feb-mo12"><td style="color:#7c3aed">Buffer (3)</td><td></td><td></td><td>20</td><td>0</td><td>480</td><td style="color:#dc2626">0</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">Not billed</td></tr><tr class="expand-trigger" data-target="feb-mo3"><td>Lilly MO W3</td><td>26</td><td>26</td><td>5</td><td style="color:#2563eb;font-weight:600">1,040</td><td class="muted">0</td><td>1,040</td><td class="neg">0</td><td>$35.00</td><td class="muted">0</td><td>$42.00</td><td>$36,400</td><td><span class="cbadge" data-tip="26 agents training from 02/23. 5 days. Zero Assembled."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="feb-mo3"><td>Contracted (26)</td><td></td><td></td><td>5</td><td style="color:#2563eb">1,040</td><td>0</td><td style="color:#0a7c4e;font-weight:600">1,040</td><td>0</td><td></td><td></td><td></td><td colspan="2">All training</td></tr><tr class="sec-row"><td colspan="13">Team Leads</td></tr><tr><td>Lilly SA (TLs)</td><td>9</td><td>9</td><td>20</td><td style="color:#2563eb;font-weight:600">1,440</td><td class="muted">0</td><td>1,440</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">0</td><td></td><td>$21,240</td><td></td></tr><tr><td>Lagos (TLs)</td><td>6</td><td>6</td><td>10</td><td style="color:#2563eb;font-weight:600">480</td><td class="muted">0</td><td>480</td><td class="muted">\u2014</td><td>$13.68</td><td class="muted">0</td><td></td><td>$6,566</td><td></td></tr><tr><td>MO W1&amp;2 (TLs)</td><td>7</td><td>7</td><td>20</td><td style="color:#2563eb;font-weight:600">1,120</td><td class="muted">0</td><td>1,120</td><td class="muted">\u2014</td><td>$35.00</td><td class="muted">0</td><td></td><td>$39,200</td><td></td></tr><tr><td>MO W3 (TLs)</td><td>2</td><td>2</td><td>5</td><td style="color:#2563eb;font-weight:600">80</td><td class="muted">0</td><td>80</td><td class="muted">\u2014</td><td>$35.00</td><td class="muted">0</td><td></td><td>$2,800</td><td></td></tr><tr class="sub"><td>Subtotal Lilly</td><td>270</td><td>306</td><td></td><td>12,080</td><td>22,480</td><td>34,560</td><td>27,112</td><td></td><td>1,138</td><td></td><td>$819,879</td><td></td></tr><tr class="tot"><td>Grand Total</td><td>328</td><td>368</td><td></td><td>12,080</td><td>31,580</td><td>43,660</td><td>35,573</td><td></td><td>1,138</td><td></td><td>$954,104</td><td></td></tr></tbody></table>',
-  recon:[{label:'Lilly SA',sub:'85/103',prod:13600,train:0,asm:17793,buf:4193,comment:'18 buffer agents add 4,193 extra production hrs to Assembled that are not billed. Oversupply 30.8%.'},{label:'Lilly Lagos',sub:'60/75',prod:0,train:4800,asm:0,buf:1200,comment:'All in training. Assembled=0. Buffer 1,200 hrs absorbed.'},{label:'Lilly MO W1&2',sub:'75/78',prod:8880,train:3120,asm:9319,buf:0,comment:'W1 full prod + W2 mixed. Assembled includes buffer.'},{label:'Lilly MO W3',sub:'26/26',prod:0,train:1040,asm:0,buf:0,comment:'All training from 02/23. Assembled=0.'},{label:'All TLs',sub:'24 TLs',prod:0,train:3120,asm:0,buf:0,comment:'TLs in training. Not tracked in Assembled.'}],
-  calOther:[{name:'All Other Workflows',count:'58/62',wk:['prod','prod','prod','prod']}],calOtherNote:'Gastro (45/47), Gastro TLs (3/3), Bot (6/8), SMM (1/1), WFM (3/3).',
-  calSA:[{name:'Lilly SA (Agents)',count:'85/103',wk:['prod','prod','prod','prod']},{name:'SA TLs',count:'9/9',wk:['train','train','train','train']}],
-  calLagos:[{name:'Lagos Agents',count:'60/75',wk:['empty','empty','train','train']},{name:'Lagos TLs',count:'6/6',wk:['empty','empty','train','train']}],
-  calMO:[{name:'MO Wave 1',count:'45',wk:['prod','prod','prod','prod']},{name:'MO Wave 2',count:'30',wk:['train','train','mixed','prod']},{name:'MO Wave 3',count:'26',wk:['empty','empty','empty','train']},{name:'MO W1&2 TLs',count:'7',wk:['prod','prod','prod','prod']},{name:'MO W3 TLs',count:'2',wk:['empty','empty','empty','train']}],
-  weeks:[{l:'Week 1',d:'Feb 2-6'},{l:'Week 2',d:'Feb 9-13'},{l:'Week 3',d:'Feb 16-20'},{l:'Week 4',d:'Feb 23-27'}],
-  scenarios:[{color:'#0a7c4e',title:'Invoiced < Assembled',body:'<strong>Steady-state.</strong> Buffer agents add hrs not billed.',ex:'Lilly SA',exColor:'#0a7c4e',exBg:'#f0fdf4',data:'Invoiced: <strong style="color:#0a7c4e">13,600</strong><br>Assembled: <strong style="color:#d97706">17,793</strong><br>+4,193 from 18 buffers'},{color:'#d97706',title:'Invoiced \u2245 Assembled',body:'<strong>Mixed.</strong> Training not in Assembled, but Assembled reflects contracted + buffer.',ex:'Lilly MO W1&2',exColor:'#d97706',exBg:'#fffbeb',data:'Invoiced: <strong style="color:#0a7c4e">12,000</strong><br>Assembled: <strong style="color:#d97706">9,319</strong><br>W1 full prod + W2 split 13d train / 7d prod'},{color:'#dc2626',title:'Invoiced > Assembled',body:'<strong>All training.</strong> Assembled = 0.',ex:'Lilly Lagos',exColor:'#dc2626',exBg:'#fef2f2',data:'Invoiced: <strong style="color:#0a7c4e">4,800</strong><br>Assembled: <strong style="color:#dc2626">0</strong><br>+1,200 buffer absorbed'}]
-},mar:{
-  period:'01 Mar \u2013 31 Mar 2026 \u00b7 22 working days',
-  stats:[{val:'$1,596,354',lbl:'Total invoiced',color:'#5eead4'},{val:'71,112',lbl:'Invoiced hours'},{val:'54,820',lbl:'Assembled (scheduled)',color:'#fbbf24'},{val:'~72,782',lbl:'Total provided hours'},{val:'+2.3%',lbl:'Oversupply vs invoiced',color:'#5eead4'}],
-  summary:'Hugo provided <span class="big-num">~72,782</span> total hours and invoiced <span class="big-num">71,112</span> \u2014 a gap of <span class="big-num">~1,670</span> hours <span style="color:#5eead4;font-weight:700">(2.3%)</span>',
-  summaryExp:'March saw significant ramp-up. Lagos onboarded Wave 2 (33 agents from 03/23). Missouri experienced attrition (134 actual vs 175 billable). <strong style="color:#f5cf46">New: weekend hours billed at 1.2x premium after compliance review.</strong><br><br><strong style="color:#fff">Why only 2.3% oversupply?</strong> MO is pulling the number down \u2014 invoiced 25,902 vs 30,800 max (under-billing by 4,898 due to attrition). <strong style="color:#5eead4">Excluding MO, Hugo provided 44,438 hrs but only invoiced 37,840 \u2014 oversupply of 6,598 hrs (17.4%).</strong>',
-  eqPays:{prod:44792,train:13720,ot:70,wknd:4245,hrs:71112,amt:'$1,596,354'},
-  eqProvides:{asmC:'~48,430',asmB:'~6,390',trainC:13720,trainB:1800,total:'~72,782'},
-  otherCallout:'teal',otherNote:'Steady-state. No training. Weekend hrs billed at 1.2x starting this month.',
-  otherTable:'<table class="dtbl"><thead><tr><th>Workflow</th><th>Billable</th><th>Actual</th><th>Days</th><th>Hrs/Day</th><th>Invoiced Hrs</th><th>Assembled</th><th>Rate</th><th>Wknd Hrs</th><th>Amount</th><th></th></tr></thead><tbody><tr><td>Gastro (Agents)</td><td>45</td><td>49</td><td>22</td><td>8</td><td>7,920</td><td class="pos">8,178</td><td>$14.75</td><td>351</td><td>$116,820</td><td><span class="cbadge" data-tip="4 buffer agents. Assembled (8,178) exceeds invoiced (7,920)."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr><td>Gastro (TLs)</td><td>3</td><td>3</td><td>22</td><td>8</td><td>528</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">\u2014</td><td>$7,788</td><td></td></tr><tr><td>Bot Monitoring</td><td>6</td><td>8</td><td>22</td><td>8</td><td>1,056</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">\u2014</td><td>$15,576</td><td></td></tr><tr><td>SMM</td><td>1</td><td>1</td><td>22</td><td>1</td><td>22</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">\u2014</td><td>$325</td><td></td></tr><tr><td>WFM RTA</td><td>2</td><td>3</td><td>22</td><td>7</td><td>308</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">\u2014</td><td>$4,543</td><td></td></tr><tr><td>WFM Scheduler</td><td>3</td><td>3</td><td>22</td><td>8</td><td>528</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">\u2014</td><td>$7,788</td><td></td></tr><tr class="sub"><td>Subtotal</td><td>60</td><td>67</td><td></td><td></td><td>10,362</td><td>8,178</td><td></td><td>351</td><td>$152,840</td><td></td></tr></tbody></table>',
-  lillyCallout:'<strong>March: major ramp-up.</strong> Lagos W1 live 03/09, W2 training from 03/23. MO W3 live 03/11, W4 training from 03/23. <strong>MO below max (134/175) due to attrition.</strong> Click <strong>+</strong> to expand. <strong style="color:#94a3b8">Hover <span style="background:#94a3b8;color:#fff;padding:1px 5px;font-family:DM Mono,monospace;font-size:10px">?</span> for comments.</strong>',
-  lillyTable:'<table class="dtbl"><thead><tr><th>Workflow</th><th>Billable</th><th>Actual</th><th>Days</th><th>Training Hrs</th><th>Contracted Prod Hrs</th><th>Invoiced Hrs</th><th>Assembled</th><th>Rate</th><th>Wknd Hrs</th><th>OT Hrs</th><th>Amount</th><th></th></tr></thead><tbody><tr class="sec-row"><td colspan="13">Agents</td></tr><tr class="expand-trigger" data-target="mar-sa"><td>Lilly SA</td><td>85</td><td>91</td><td>22</td><td class="muted">0</td><td>14,960</td><td>14,960</td><td class="pos">17,196</td><td>$14.75</td><td>1,369</td><td>61.5</td><td>$221,749</td><td><span class="cbadge" data-tip="85 contracted, 91 actual. 6 buffer. Assembled exceeds invoiced by 14.9%. Billing at contracted max."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="mar-sa"><td>Contracted (85)</td><td></td><td></td><td>22</td><td>0</td><td>14,960</td><td style="color:#0a7c4e;font-weight:600">14,960</td><td>~15,913</td><td></td><td></td><td></td><td colspan="2">Billed at max</td></tr><tr class="expand-detail" id="mar-sa"><td style="color:#7c3aed">Buffer (6)</td><td></td><td></td><td>22</td><td>0</td><td>1,056</td><td style="color:#dc2626">0</td><td>~1,283</td><td></td><td></td><td></td><td colspan="2">Not billed</td></tr><tr class="expand-trigger" data-target="mar-lag"><td>Lilly Lagos</td><td>85</td><td>108</td><td>22</td><td style="color:#2563eb;font-weight:600">6,360</td><td class="muted">\u2014</td><td>14,960</td><td>10,904</td><td>$13.68</td><td>1,774</td><td class="muted">0</td><td>$204,653</td><td><span class="cbadge" data-tip="85 contracted, 108 actual (23 buffer). W1: 7d train + 15d prod. W2: 15d train + 7d prod. Buffer training 1,800 hrs absorbed."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="mar-lag"><td>W1 prod (75 x 15d)</td><td></td><td></td><td>15</td><td>0</td><td>9,000</td><td style="color:#0a7c4e;font-weight:600">9,000</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">From 03/09</td></tr><tr class="expand-detail" id="mar-lag"><td>W1 train (75 x 7d)</td><td></td><td></td><td>7</td><td style="color:#2563eb">4,200</td><td>0</td><td style="color:#0a7c4e;font-weight:600">4,200</td><td>0</td><td></td><td></td><td></td><td colspan="2">Not in Assembled</td></tr><tr class="expand-detail" id="mar-lag"><td>W2 prod (33 x 7d)</td><td></td><td></td><td>7</td><td>0</td><td>1,848</td><td style="color:#0a7c4e;font-weight:600">incl.</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">From 03/23</td></tr><tr class="expand-detail" id="mar-lag"><td>W2 train (33 x 15d)</td><td></td><td></td><td>15</td><td style="color:#2563eb">2,160</td><td>0</td><td style="color:#0a7c4e;font-weight:600">incl.</td><td>0</td><td></td><td></td><td></td><td colspan="2">Not in Assembled</td></tr><tr class="expand-detail" id="mar-lag"><td style="color:#7c3aed">Buffer (23)</td><td></td><td></td><td></td><td style="color:#7c3aed">1,800</td><td></td><td style="color:#dc2626">0</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">Not billed</td></tr><tr class="expand-trigger" data-target="mar-mo"><td>Lilly MO</td><td>175</td><td>134</td><td>22</td><td style="color:#2563eb;font-weight:600">7,360</td><td class="muted">\u2014</td><td>25,902</td><td>18,542</td><td>$35.00</td><td>1,102</td><td>8.25</td><td>$906,917</td><td><span class="cbadge" data-tip="175 billable, 134 actual (attrition). Invoiced 25,902 well below max 30,800. W1 (31) + W2 (32) full prod. W3 (20): 10d train + 12d prod. W4 (48): 15d train + 7d prod."><span class="cbadge-icon">?</span><span class="cbadge-label">Comment</span></span></td></tr><tr class="expand-detail" id="mar-mo"><td>W1 (31 x 22d)</td><td></td><td></td><td>22</td><td>0</td><td>5,456</td><td style="color:#0a7c4e;font-weight:600">5,456</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">Full prod</td></tr><tr class="expand-detail" id="mar-mo"><td>W2 (32 x 22d)</td><td></td><td></td><td>22</td><td>0</td><td>5,632</td><td style="color:#0a7c4e;font-weight:600">5,632</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">Full prod</td></tr><tr class="expand-detail" id="mar-mo"><td>W3 (20)</td><td></td><td></td><td>22</td><td style="color:#2563eb">1,600</td><td>1,920</td><td style="color:#0a7c4e;font-weight:600">3,520</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">10d train + 12d prod</td></tr><tr class="expand-detail" id="mar-mo"><td>W4 (48)</td><td></td><td></td><td>22</td><td style="color:#2563eb">5,760</td><td>2,688</td><td style="color:#0a7c4e;font-weight:600">8,448</td><td>incl.</td><td></td><td></td><td></td><td colspan="2">15d train + 7d prod</td></tr><tr class="expand-detail" id="mar-mo"><td style="color:#dc2626">Attrition</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td colspan="2">134 actual vs 175 billable</td></tr><tr class="sec-row"><td colspan="13">Team Leads</td></tr><tr><td>SA TLs</td><td>8</td><td>9</td><td>22</td><td class="muted">0</td><td class="muted">\u2014</td><td>1,408</td><td class="muted">\u2014</td><td>$14.75</td><td class="muted">\u2014</td><td class="muted">0</td><td>$20,768</td><td></td></tr><tr><td>Lagos TLs</td><td>9</td><td>9</td><td>22</td><td class="muted">0</td><td class="muted">\u2014</td><td>1,584</td><td class="muted">\u2014</td><td>$13.68</td><td class="muted">\u2014</td><td class="muted">0</td><td>$21,669</td><td></td></tr><tr><td>MO TLs</td><td>11</td><td>11</td><td>22</td><td class="muted">0</td><td class="muted">\u2014</td><td>1,936</td><td class="muted">\u2014</td><td>$35.00</td><td class="muted">\u2014</td><td class="muted">0</td><td>$67,760</td><td></td></tr><tr class="sub"><td>Subtotal Lilly</td><td>373</td><td>362</td><td></td><td>13,720</td><td></td><td>60,750</td><td>46,642</td><td></td><td>4,245</td><td>70</td><td>$1,443,515</td><td></td></tr><tr class="tot"><td>Grand Total</td><td>433</td><td>429</td><td></td><td>13,720</td><td></td><td>71,112</td><td>54,820</td><td></td><td>4,596</td><td>70</td><td>$1,596,354</td><td></td></tr></tbody></table>',
-  recon:[{label:'Lilly SA',sub:'85/91',prod:14960,train:0,asm:17196,buf:2236,comment:'6 buffer agents add 2,236 extra production hrs to Assembled that are not billed. Oversupply 14.9%.'},{label:'Lilly Lagos',sub:'85/108',prod:8600,train:6360,asm:10904,buf:1800,comment:'Invoiced 14,960 = production (8,600) + contracted training (6,360). W1 live 03/09, W2 live 03/23. Assembled (10,904) is incomplete as it only captures production days. Buffer training 1,800 hrs absorbed by Hugo.'},{label:'Lilly MO',sub:'175 billed / 134 actual',prod:18542,train:7360,asm:18542,buf:0,comment:'Attrition: 134/175. W1+W2 full production. W3: 10d training + 12d production. W4: 15d training + 7d production. Invoiced 25,902 well below max 30,800.'},{label:'All TLs',sub:'28 TLs',prod:4928,train:0,asm:0,buf:0,comment:'TL hours. Not tracked in Assembled.'}],
-  calOther:[{name:'All Other Workflows',count:'60/67',wk:['prod','prod','prod','prod']}],calOtherNote:'Gastro (45/49), TLs (3/3), Bot (6/8), SMM (1/1), WFM (5/6).',
-  calSA:[{name:'Lilly SA (Agents)',count:'85/91',wk:['prod','prod','prod','prod']},{name:'SA TLs',count:'8/9',wk:['prod','prod','prod','prod']}],
-  calLagos:[{name:'Lagos W1',count:'75',wk:['train','mixed','prod','prod']},{name:'Lagos W2',count:'33',wk:['empty','empty','empty','mixed']},{name:'Lagos TLs',count:'9/9',wk:['prod','prod','prod','prod']}],
-  calMO:[{name:'MO W1',count:'31',wk:['prod','prod','prod','prod']},{name:'MO W2',count:'32',wk:['prod','prod','prod','prod']},{name:'MO W3',count:'20',wk:['train','mixed','prod','prod']},{name:'MO W4',count:'48',wk:['train','train','train','prod']},{name:'MO TLs',count:'11',wk:['prod','prod','prod','prod']}],
-  weeks:[{l:'Week 1',d:'Mar 2-6'},{l:'Week 2',d:'Mar 9-13'},{l:'Week 3',d:'Mar 16-20'},{l:'Week 4',d:'Mar 23-27'}],
-  scenarios:[{color:'#0a7c4e',title:'Invoiced < Assembled',body:'<strong>Steady-state.</strong> Buffer agents add hrs not billed.',ex:'Lilly SA',exColor:'#0a7c4e',exBg:'#f0fdf4',data:'Invoiced: <strong style="color:#0a7c4e">14,960</strong><br>Assembled: <strong style="color:#d97706">17,196</strong><br>+2,236 from 6 buffers'},{color:'#d97706',title:'Invoiced \u2245 Assembled',body:'<strong>Mixed.</strong> Training not in Assembled, but Assembled reflects contracted + buffer.',ex:'Lilly Lagos',exColor:'#d97706',exBg:'#fffbeb',data:'Invoiced: <strong style="color:#0a7c4e">14,960</strong><br>Assembled: <strong style="color:#d97706">10,904</strong><br>W1 + W2 training not in Assembled'},{color:'#dc2626',title:'Invoiced below max (attrition)',body:'<strong>MO has attrition.</strong> 134 actual vs 175 billable.',ex:'Lilly MO',exColor:'#dc2626',exBg:'#fef2f2',data:'Max: <strong>30,800</strong><br>Invoiced: <strong style="color:#0a7c4e">25,902</strong><br>Shortfall: <strong style="color:#dc2626">4,898</strong> below max'}]
-}}};
+// ═══ CONTROL PANEL ═══
+function cpOpen(){document.getElementById('cp-overlay').classList.add('open');cpRefresh();}
+function cpClose(){document.getElementById('cp-overlay').classList.remove('open');}
 
-let curMonth='feb',curClient='gifthealth';
-const MONTH_NAMES={feb:'February',mar:'March',apr:'April',may:'May',jun:'June'};
-function switchMonth(m,btn){curMonth=m;document.querySelectorAll('.month-pill').forEach(b=>b.classList.remove('act'));btn.classList.add('act');render();}
+// Presence
+function cpSetPresence(user){
+  try{
+    var ref=db.ref('cx-dash/presence/'+user.uid);
+    ref.set({name:user.displayName||user.email.split('@')[0],email:user.email,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP,tab:document.querySelector('.tab.act')?document.querySelector('.tab.act').textContent.trim():'—'});
+    ref.onDisconnect().update({online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});
+  }catch(e){console.log('Presence error:',e);}
+}
+function cpClearPresence(user){
+  try{db.ref('cx-dash/presence/'+user.uid).update({online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});}catch(e){}
+}
+function cpUpdateTab(){
+  if(!currentUser)return;
+  try{var tab=document.querySelector('.tab.act');db.ref('cx-dash/presence/'+currentUser.uid+'/tab').set(tab?tab.textContent.trim():'—');}catch(e){}
+}
 
-// Invoice status management
-function loadStatuses(cb){
-  db.collection('invoiceStatus').onSnapshot(snap=>{
-    invoiceStatuses={};
-    snap.forEach(doc=>invoiceStatuses[doc.id]=doc.data());
-    // Initialize defaults if missing
-    Object.keys(DEFAULT_STATUSES).forEach(m=>{
-      const key=curClient+'_'+m;
-      if(!invoiceStatuses[key]){
-        invoiceStatuses[key]={status:DEFAULT_STATUSES[m]};
-        db.collection('invoiceStatus').doc(key).set({status:DEFAULT_STATUSES[m]});
-      }
-    });
-    if(cb)cb();
-    render();
+// Listen for presence changes
+var cpPresenceRef=null;
+function cpListenPresence(){
+  try{
+    cpPresenceRef=db.ref('cx-dash/presence');
+    cpPresenceRef.on('value',function(snap){cpRenderUsers(snap.val());});
+  }catch(e){
+    // Fallback: show current user only
+    cpRenderUsersFallback();
+  }
+}
+
+function cpRenderUsers(data){
+  var onlineEl=document.getElementById('cp-online-list');
+  var usersEl=document.getElementById('cp-users-list');
+  var onlineCount=0;
+  var onlineHtml='',allHtml='';
+
+  if(!data){onlineEl.innerHTML='<div style="font-size:11px;color:#888;">No users tracked yet</div>';usersEl.innerHTML='';document.getElementById('cp-online-count').textContent='';return;}
+
+  var users=[];
+  for(var uid in data){users.push({uid:uid,...data[uid]});}
+  users.sort(function(a,b){return(b.lastSeen||0)-(a.lastSeen||0);});
+
+  users.forEach(function(u){
+    var initials=(u.name||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().substring(0,2);
+    var ago=u.lastSeen?cpTimeAgo(u.lastSeen):'—';
+    var statusClass=u.online?'cp-online':'cp-offline';
+    var statusText=u.online?'Online':'Last seen '+ago;
+    var tabPill=u.online&&u.tab?'<span style="font-family:\'DM Mono\',monospace;font-size:8px;background:#e8f0fc;color:#1a56db;padding:1px 5px;margin-left:4px;">'+u.tab+'</span>':'';
+    var row='<div class="cp-user"><div class="cp-avatar">'+initials+'</div><div><div class="cp-name">'+u.name+tabPill+'</div><div class="cp-email">'+u.email+'</div></div><div class="cp-status '+statusClass+'" title="'+statusText+'"></div><div class="cp-time">'+statusText+'</div></div>';
+
+    if(u.online){onlineHtml+=row;onlineCount++;}
+    allHtml+=row;
+  });
+
+  onlineEl.innerHTML=onlineHtml||'<div style="font-size:11px;color:#888;">No one else online</div>';
+  usersEl.innerHTML=allHtml||'<div style="font-size:11px;color:#888;">No users registered</div>';
+  document.getElementById('cp-online-count').textContent=onlineCount+' online';
+}
+
+function cpRenderUsersFallback(){
+  var el=document.getElementById('cp-online-list');
+  if(currentUser){
+    var name=currentUser.displayName||currentUser.email;
+    var initials=name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().substring(0,2);
+    el.innerHTML='<div class="cp-user"><div class="cp-avatar">'+initials+'</div><div><div class="cp-name">'+name+' (you)</div><div class="cp-email">'+currentUser.email+'</div></div><div class="cp-status cp-online"></div><div class="cp-time">Online</div></div><div style="font-size:10px;color:#888;margin-top:6px;padding:6px;background:#fdf3e6;border:1px solid #f5d5a0;">Real-time presence requires Firebase RTDB rules. Set read/write to authenticated users in Firebase Console.</div>';
+  }
+  document.getElementById('cp-users-list').innerHTML='<div style="font-size:10px;color:#888;">User list requires Firebase RTDB.</div>';
+}
+
+function cpTimeAgo(ts){
+  var diff=Date.now()-ts;
+  if(diff<60000)return 'just now';
+  if(diff<3600000)return Math.floor(diff/60000)+'m ago';
+  if(diff<86400000)return Math.floor(diff/3600000)+'h ago';
+  return Math.floor(diff/86400000)+'d ago';
+}
+
+// Invite
+function cpInvite(){
+  var email=document.getElementById('cp-invite-email').value.trim();
+  var name=document.getElementById('cp-invite-name').value.trim();
+  var role=document.getElementById('cp-invite-role').value;
+  var msg=document.getElementById('cp-invite-msg');
+
+  if(!email){msg.innerHTML='<span style="color:#b91c1c;">Enter an email address</span>';return;}
+  if(!validDomain(email)){msg.innerHTML='<span style="color:#b91c1c;">Must be @hugotech.co</span>';return;}
+
+  msg.innerHTML='<span style="color:#1a56db;">Sending invite...</span>';
+
+  // Create user with temp password, then send reset
+  var tempPw='Hugo'+Math.random().toString(36).substring(2,10)+'!';
+  auth.createUserWithEmailAndPassword(email,tempPw).then(function(cred){
+    // Update display name
+    if(name)cred.user.updateProfile({displayName:name});
+    // Store role
+    try{db.ref('cx-dash/users/'+cred.user.uid).set({email:email,name:name||email.split('@')[0],role:role,invited:Date.now(),invitedBy:currentUser?currentUser.email:'system'});}catch(e){}
+    // Send password reset as "invite"
+    return auth.sendPasswordResetEmail(email);
+  }).then(function(){
+    msg.innerHTML='<span style="color:#0a7c4e;">✓ Invite sent to '+email+'. They will receive a password reset email.</span>';
+    cpLogActivity(currentUser?currentUser.displayName:'Admin','invited '+email+' as '+role);
+    document.getElementById('cp-invite-email').value='';
+    document.getElementById('cp-invite-name').value='';
+    // Re-sign in as current user (createUser signs in as new user)
+    // This is a known limitation; user may need to re-auth
+  }).catch(function(err){
+    if(err.code==='auth/email-already-in-use'){
+      // Just send password reset
+      auth.sendPasswordResetEmail(email).then(function(){
+        msg.innerHTML='<span style="color:#0a7c4e;">✓ User exists. Password reset sent to '+email+'.</span>';
+      }).catch(function(e2){msg.innerHTML='<span style="color:#b91c1c;">'+e2.message+'</span>';});
+    }else{
+      msg.innerHTML='<span style="color:#b91c1c;">'+err.message+'</span>';
+    }
   });
 }
-function getStatus(client,month){const k=client+'_'+month;return(invoiceStatuses[k]&&invoiceStatuses[k].status)||'draft';}
-function setInvoiceStatus(client,month,status){
-  const key=client+'_'+month;
-  const update={status:status};
-  const email=auth.currentUser.email;
-  if(status==='submitted'){update.submittedBy=email;update.submittedAt=firebase.firestore.FieldValue.serverTimestamp();}
-  if(status==='accepted'){update.acceptedBy=email;update.acceptedAt=firebase.firestore.FieldValue.serverTimestamp();}
-  if(status==='draft'){update.retractedBy=email;update.retractedAt=firebase.firestore.FieldValue.serverTimestamp();}
-  db.collection('invoiceStatus').doc(key).set(update,{merge:true});
+
+// Activity Log
+function cpLogActivity(who,action){
+  var log=JSON.parse(localStorage.getItem('hugo-cx-activity')||'[]');
+  log.unshift({ts:Date.now(),who:who,action:action});
+  if(log.length>100)log=log.slice(0,100);
+  localStorage.setItem('hugo-cx-activity',JSON.stringify(log));
 }
 
-function render(){
-  const cd=DATA[curClient];if(!cd)return;
-  const userEmail=auth.currentUser?auth.currentUser.email:'';
-  const userIsClient=isClient(userEmail);
-  const userIsAdm=isAdmin(userEmail);
-  const userIsApprover=isApprover(userEmail);
+function cpRefresh(){
+  cpListenPresence();
+  // Render activity log
+  var log=JSON.parse(localStorage.getItem('hugo-cx-activity')||'[]');
+  var el=document.getElementById('cp-activity');
+  if(!log.length){el.innerHTML='<span style="color:#888;">No activity yet</span>';return;}
+  var html='';
+  log.slice(0,30).forEach(function(e){
+    var d=new Date(e.ts);
+    var ts=d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    html+='<div><span class="ts">'+ts+'</span><strong>'+e.who+'</strong> '+e.action+'</div>';
+  });
+  el.innerHTML=html;
+}
 
-  // Filter months: clients only see submitted or accepted
-  const allMonths=Object.keys(cd);
-  const visibleMonths=userIsClient?allMonths.filter(m=>{const s=getStatus(curClient,m);return s==='submitted'||s==='accepted';}):allMonths;
+function cpExportLog(){
+  var log=JSON.parse(localStorage.getItem('hugo-cx-activity')||'[]');
+  var csv='Timestamp,Who,Action\n';
+  log.forEach(function(e){csv+=new Date(e.ts).toISOString()+','+e.who+','+e.action+'\n';});
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cx-dashboard-activity.csv';a.click();
+}
+function cpClearLog(){if(confirm('Clear all activity logs?')){localStorage.removeItem('hugo-cx-activity');cpRefresh();}}
+function cpTogglePresence(on){
+  if(on&&currentUser){cpSetPresence(currentUser);}
+  else if(!on&&currentUser){cpClearPresence(currentUser);}
+}
+</script>
 
-  // If current month not visible, switch to first visible
-  if(visibleMonths.length>0&&!visibleMonths.includes(curMonth))curMonth=visibleMonths[0];
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div><div class="h-title">Hugo CX — Service Delivery Dashboard</div><div class="h-sub">CX & Digital Ops · ex-Meta · ex-Google · Feb 2026</div></div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span class="pill pill-b">Lagos</span><span class="pill pill-o">SA</span><span class="pill pill-g">US</span>
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;margin-left:6px;">₦1,458 · ZAR 16</span>
+    <span class="h-user" style="margin-left:12px;">Signed in as <strong id="user-name">—</strong></span>
+    <button class="h-btn" onclick="cpOpen()" style="background:#0f172a;color:#fff;border-color:#0f172a;" title="Control Panel">⚙ Admin</button>
+    <button class="h-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
 
-  const d=cd[curMonth];
-  if(!d||visibleMonths.length===0){
-    document.getElementById('h-period').innerHTML='No invoices available for review yet.';
-    document.getElementById('month-bar').innerHTML='';
-    document.getElementById('h-stats').innerHTML='';
-    document.getElementById('inv-status-area').innerHTML='';
-    return;
+<!-- ═══ TABS ═══ -->
+<div class="tabbar">
+  <div class="tab act" onclick="go('core')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">1</span> Core KPIs</div>
+  <div class="tab" onclick="go('costclient')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">2</span> Cost & Client Profitability</div>
+  <div class="tab" onclick="go('market')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">3</span> Market View</div>
+  <div class="tab" onclick="go('staffing')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">4</span> Staffing</div>
+  <div class="tab" onclick="go('forecast')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">5</span> P&L Forecast</div>
+  <div class="tab" onclick="go('ramp')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">6</span> Ramp Economics</div>
+  <div class="tab" onclick="go('inputs')"><span style="background:#0f172a;color:#fff;padding:1px 5px;margin-right:4px;font-size:8px;">⚙</span> Inputs & Targets</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 1: CORE KPIs -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane act" id="p-core">
+<div class="callout dark"><strong>Goal:</strong> 30-second health check. <span class="rag rag-g"></span> ≤2% <span class="rag rag-a"></span> 2-10% <span class="rag rag-r"></span> >10%. <strong>P0</strong> · Simone, Ori, Finance + Taire</div>
+
+<div class="sec-title" style="color:#1a56db;font-size:15px;margin-bottom:4px;">Hugo Management KPIs — Feb 2026</div>
+<div style="font-size:10px;color:#888;margin-bottom:10px;font-family:'DM Mono',monospace;">ACTUALS · Updated Apr 8 2026</div>
+
+<div class="krow" style="grid-template-columns:repeat(6,1fr);">
+  <div class="kcard status-a" style="--kc:#1a56db">
+    <div class="klbl"><span class="rag rag-a"></span>1. CX Revenue</div><div class="kval">$1.57M</div><div class="ksub">Target: $1.66M · Jan: $1.13M</div>
+    <div class="gap-bar gap-a"><span class="arrow">▲</span> +39% MoM</div>
+    <div class="gap-chip a">5.4% BELOW TARGET</div>
+  </div>
+  <div class="kcard status-r" style="--kc:#0a7c4e">
+    <div class="klbl"><span class="rag rag-r"></span>2. CX EBITDA</div><div class="kval">~$45K</div><div class="ksub">Target: $120K+ · Jan: ~$20K</div>
+    <div class="gap-bar gap-g"><span class="arrow">▲</span> +125% MoM</div>
+    <div class="gap-chip r">63% BELOW TARGET</div>
+  </div>
+  <div class="kcard status-a" style="--kc:#0a7c4e">
+    <div class="klbl"><span class="rag rag-a"></span>3. Cost/Agent NG</div><div class="kval">$581</div><div class="ksub">Target: $550 · Jan: $640</div>
+    <div class="gap-bar gap-g"><span class="arrow">▼</span> -9.2% MoM</div>
+    <div class="gap-chip a">5.6% ABOVE</div>
+  </div>
+  <div class="kcard status-r" style="--kc:#b45309">
+    <div class="klbl"><span class="rag rag-r"></span>4. Cost/Agent SA</div><div class="kval">$1,329</div><div class="ksub">Q2 tgt: $1,100 · Jan: $1,409</div>
+    <div class="gap-bar gap-g"><span class="arrow">▼</span> -5.7% MoM</div>
+    <div class="gap-chip r">20.8% ABOVE</div>
+  </div>
+  <div class="kcard status-a" style="--kc:#b91c1c">
+    <div class="klbl"><span class="rag rag-a"></span>5. Cost/Agent US</div><div class="kval">$3,493</div><div class="ksub">Target: $3,200 · Jan: n/a</div>
+    <div class="gap-bar gap-a"><span class="arrow">—</span> New metric</div>
+    <div class="gap-chip a">9.2% ABOVE</div>
+  </div>
+  <div class="kcard status-r" style="--kc:#64748b">
+    <div class="klbl"><span class="rag rag-r"></span>6. Budget Adh.</div><div class="kval">24%</div><div class="ksub">Target: 19% · Jan: ~24%</div>
+    <div class="gap-bar gap-a"><span class="arrow">—</span> Flat MoM</div>
+    <div class="gap-chip r">5pp ABOVE TARGET</div>
+  </div>
+</div>
+
+<div class="sec-title" style="color:#888;font-size:11px;margin-bottom:4px;">OPERATING KPIs</div>
+<div class="krow" style="grid-template-columns:repeat(7,1fr);">
+  <div class="kcard" style="--kc:#333"><div class="klbl">Gross Profit</div><div class="kval">$290K</div><div class="ksub">GM 20%</div></div>
+  <div class="kcard status-g" style="--kc:#6d28d9"><div class="klbl"><span class="rag rag-g"></span>Pilots</div><div class="kval">2</div><div class="ksub">Tgt 2-3/qtr</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Rev/Agent</div><div class="kval">$1,807</div></div>
+  <div class="kcard status-r" style="--kc:#b91c1c"><div class="klbl"><span class="rag rag-r"></span>Rev Conc.</div><div class="kval">62%</div><div class="ksub">Tgt &lt;55%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Buffer %</div><div class="kval">10.7%</div></div>
+  <div class="kcard status-r" style="--kc:#b91c1c"><div class="klbl"><span class="rag rag-r"></span>US Attrition</div><div class="kval">~22%</div><div class="ksub">Tgt &lt;15%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Mgmt OH</div><div class="kval">75</div><div class="ksub">16PM+7Train+Supp</div></div>
+</div>
+
+<div class="g2">
+  <div class="ccard"><div class="ctitle">Revenue Trajectory vs Target</div><div class="csub">USD millions per month · $26M run rate by Dec 2026</div><div class="ch"><canvas id="c-rev-traj"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Cost / Billable Agent vs Target</div><div class="csub">USD per agent per month · Actual (blue) vs Target (green)</div><div class="ch"><canvas id="c-cost-tgt"></canvas></div></div>
+</div>
+
+<div class="g3">
+  <div class="ccard"><div class="ctitle">Revenue Mix — Top 5 + Rest</div><div class="csub">USD thousands · Feb 2026</div><div class="ch ch-sm"><canvas id="c-mix"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Headcount Mix</div><div class="csub"># of agents · Feb 2026</div><div class="ch ch-sm"><canvas id="c-hc-mix"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Geographic Mix</div><div class="csub"># of agents by market · Feb 2026</div><div class="ch ch-sm"><canvas id="c-geo-mix"></canvas></div></div>
+</div>
+
+<div class="ccard">
+  <div class="ctitle">P&L Summary — Jan vs Feb</div><div class="csub">USD · Color: positive/negative trend</div>
+  <table class="dtbl">
+    <tr><th style="text-align:left">Line</th><th>Jan</th><th>Feb</th><th>MoM Δ</th><th>MoM %</th><th>Annualized</th><th style="text-align:left">Driver</th></tr>
+    <tr class="bg-g"><td><strong>Gross Revenue</strong></td><td>$1.13M</td><td>$1.57M</td><td class="hi">+$437K</td><td class="hi">+39%</td><td>$18.8M</td><td style="text-align:left">GH ramp + new</td></tr>
+    <tr><td>&nbsp;&nbsp;GH Africa</td><td>$190K</td><td>$535K</td><td class="hi">+$345K</td><td class="hi">+182%</td><td>$6.4M</td><td style="text-align:left">Lagos W2 + SA Lilly</td></tr>
+    <tr><td>&nbsp;&nbsp;GH US</td><td>$203K</td><td>$507K</td><td class="hi">+$304K</td><td class="hi">+150%</td><td>$6.1M</td><td style="text-align:left">MO W3+W4</td></tr>
+    <tr><td>&nbsp;&nbsp;Other CX</td><td>$560K</td><td>$616K</td><td class="hi">+$57K</td><td class="hi">+10%</td><td>$7.4M</td><td style="text-align:left">Almedia, new logos</td></tr>
+    <tr class="bg-r"><td><strong>COS</strong></td><td>$890K</td><td>$1.18M</td><td class="lo">+$287K</td><td class="lo">+32%</td><td>$14.1M</td><td style="text-align:left">GMC + Lagos training</td></tr>
+    <tr class="bg-g"><td><strong>Gross Profit</strong></td><td>$180K</td><td>$290K</td><td class="hi">+$110K</td><td class="hi">+61%</td><td>$3.5M</td><td style="text-align:left"></td></tr>
+    <tr><td><strong>GM%</strong></td><td class="lo">17%</td><td class="mid">20%</td><td class="hi">+3pp</td><td></td><td></td><td style="text-align:left;color:#b91c1c">Tgt 35-40% steady</td></tr>
+    <tr class="bg-a"><td><strong>OpEx</strong></td><td>$270K</td><td>$377K</td><td class="lo">+$107K</td><td class="lo">+40%</td><td>$4.5M</td><td style="text-align:left">Hiring, prof svcs</td></tr>
+    <tr><td><strong>EBITDA</strong></td><td>~$20K</td><td>~$45K</td><td class="hi">+$25K</td><td></td><td>$540K</td><td style="text-align:left">Thin but improving</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 2: COST & CLIENT PROFITABILITY (MERGED) -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-costclient">
+<div class="callout dark"><strong>Goal:</strong> Why is cost/agent moving? Which clients make money? <strong>P0+P1</strong> · Taire + Finance</div>
+
+<div class="callout red" style="margin-bottom:11px"><strong>⚠ Accounts needing attention:</strong> Backroads (175% buffer — 7 buffers on 4 billable). Stream Hatchet (57% buffer). Sonovate (43% buffer). GH Lagos temporarily negative during W2 training. These require immediate staffing intervention.</div>
+
+<div class="sec">Client Profitability — Top 10 by Size + Attention List</div>
+<div class="ccard">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Client</th><th>Market</th><th>Rate</th><th>HC</th><th>Rev</th><th>COS</th><th>GM</th><th>GM%</th><th style="text-align:left">Status</th></tr>
+    <tr><td><strong>GH Africa</strong></td><td>Lagos+SA</td><td>$13.85-$14.75</td><td>258</td><td>$535K</td><td>$460K</td><td class="mid">$75K</td><td class="mid">14%</td><td style="text-align:left"><span class="rag rag-a"></span>Ramp</td></tr>
+    <tr><td><strong>GH US</strong></td><td>Springfield</td><td>$35.00</td><td>175</td><td>$507K</td><td>$431K</td><td class="mid">$76K</td><td class="mid">15%</td><td style="text-align:left"><span class="rag rag-a"></span>Ramp</td></tr>
+    <tr><td><strong>GH Overall</strong></td><td>All</td><td>—</td><td>433</td><td>$1,042K</td><td>$891K</td><td class="mid">$151K</td><td class="mid">15%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr style="border-top:2px solid #d8d6d0"><td><strong>Almedia</strong></td><td>Lagos</td><td>$10.25</td><td>127</td><td>$126K</td><td>$69K</td><td class="hi">$57K</td><td class="hi">45%</td><td style="text-align:left"><span class="rag rag-g"></span>Healthy</td></tr>
+    <tr><td><strong>Outschool</strong></td><td>Lagos</td><td>$12.50</td><td>83</td><td>$95K</td><td>$55K</td><td class="hi">$40K</td><td class="hi">42%</td><td style="text-align:left"><span class="rag rag-g"></span>Healthy</td></tr>
+    <tr><td><strong>Aurora</strong></td><td>Lagos</td><td>$12.50</td><td>55</td><td>$40K</td><td>$18K</td><td class="hi">$22K</td><td class="hi">56%</td><td style="text-align:left"><span class="rag rag-g"></span>Healthy</td></tr>
+    <tr><td><strong>Faire</strong></td><td>Lagos</td><td>$12.50</td><td>40</td><td>$87K</td><td>$28K</td><td class="hi">$59K</td><td class="hi">68%</td><td style="text-align:left"><span class="rag rag-g"></span>Best margin</td></tr>
+    <tr><td><strong>Curri</strong></td><td>Lagos+SA</td><td>$12.50</td><td>31</td><td>$25K</td><td>$18K</td><td class="hi">$7K</td><td>28%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr><td><strong>CSI</strong></td><td>SA</td><td>$16.00</td><td>16</td><td>$30K</td><td>$21K</td><td>$9K</td><td>30%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr><td><strong>Finix</strong></td><td>Lagos</td><td>$12.50</td><td>17</td><td>$37K</td><td>$22K</td><td class="hi">$15K</td><td class="hi">41%</td><td style="text-align:left"><span class="rag rag-g"></span></td></tr>
+    <tr><td>Rest of CX (14 accts)</td><td>Lagos</td><td>$12.50</td><td>45</td><td>$97K</td><td>$68K</td><td>$29K</td><td>30%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr class="tot"><td><strong>CX Total</strong></td><td></td><td></td><td><strong>812</strong></td><td><strong>$1,467K</strong></td><td><strong>$1,067K</strong></td><td><strong>$400K</strong></td><td><strong>27%</strong></td><td></td></tr>
+  </table>
+</div>
+
+<div class="g2">
+  <div class="ccard">
+    <div class="ctitle">Client GM% — Feb 2026</div>
+    <div class="csub">% shown on bars · Ordered by # of agents (client size)</div>
+    <div class="ch"><canvas id="c-cgm"></canvas></div>
+    <div class="csub" style="margin-top:4px;font-family:'DM Mono',monospace;">Agents: GH 433 · Almedia 127 · Outschool 83 · Aurora 55 · Faire 40 · CSI 16 · Rest 58</div>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">Cost / Billable Agent by Market — Feb</div>
+    <div class="csub">USD per agent · Actual vs Target · Numbers shown on bars</div>
+    <div class="ch"><canvas id="c-cost-mkt"></canvas></div>
+  </div>
+</div>
+
+<div class="sec">Billable Mix</div>
+<div class="krow" style="grid-template-columns:repeat(4,1fr);">
+  <div class="kcard" style="--kc:#333"><div class="klbl">Total HC</div><div class="kval">887</div></div>
+  <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Billable</div><div class="kval">812</div><div class="ksub">92%</div></div>
+  <div class="kcard" style="--kc:#b45309"><div class="klbl">Non-Billable</div><div class="kval">75</div><div class="ksub">8%</div></div>
+  <div class="kcard" style="--kc:#333"><div class="klbl">Buffer %</div><div class="kval">10.7%</div></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 3: MARKET VIEW -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-market">
+<div class="callout dark"><strong>Goal:</strong> Is US viable? Market P&L + agent distribution. <strong>P1</strong> · Taire + Finance</div>
+
+<div class="krow" style="grid-template-columns:repeat(3,1fr);">
+  <div class="kcard" style="--kc:#0a7c4e"><div class="klbl"><span class="rag rag-g"></span>Lagos</div><div class="kval">~45% GM</div><div class="ksub">435 agents (54%)</div></div>
+  <div class="kcard" style="--kc:#b91c1c"><div class="klbl"><span class="rag rag-a"></span>Springfield</div><div class="kval">28%/40%</div><div class="ksub">185 agents (23%)</div></div>
+  <div class="kcard" style="--kc:#b45309"><div class="klbl"><span class="rag rag-a"></span>South Africa</div><div class="kval">~30% GM</div><div class="ksub">191 agents (24%)</div></div>
+</div>
+
+<div class="ccard">
+  <div class="ctitle">P&L by Market — Feb 2026</div>
+  <table class="dtbl">
+    <tr><th style="text-align:left">Market</th><th>Agents</th><th>% of Total</th><th>Revenue</th><th>COS</th><th>Gross Margin</th><th>GM%</th><th>Cost/Agent</th><th>Est. EBITDA</th><th>EBITDA %</th></tr>
+    <tr><td><strong>Lagos</strong></td><td>435</td><td>54%</td><td>$830K</td><td>$457K</td><td class="hi">$373K</td><td class="hi">45%</td><td>$581</td><td class="hi">$186K</td><td class="hi">22%</td></tr>
+    <tr><td><strong>South Africa</strong></td><td>191</td><td>24%</td><td>$332K</td><td>$254K</td><td class="mid">$78K</td><td class="mid">24%</td><td>$1,329</td><td class="lo">$3K</td><td class="lo">1%</td></tr>
+    <tr><td><strong>Springfield (US)</strong></td><td>185</td><td>23%</td><td>$507K</td><td>$431K</td><td class="mid">$76K</td><td class="mid">15%</td><td>$3,493</td><td class="lo">-$39K</td><td class="lo">-8%</td></tr>
+    <tr class="tot"><td><strong>Total</strong></td><td><strong>811</strong></td><td>100%</td><td><strong>$1,669K</strong></td><td><strong>$1,142K</strong></td><td><strong>$527K</strong></td><td><strong>32%</strong></td><td>$1,408</td><td><strong>$45K</strong></td><td><strong>3%</strong></td></tr>
+  </table>
+  <div class="csub" style="margin-top:4px;font-family:'DM Mono',monospace;">EBITDA estimated with $377K OpEx + $12K dep allocated by revenue share. GMC standalone: Feb pre-commission profit $117.8K (27%), post-commission $107.6K (25%).</div>
+</div>
+
+<div class="g2">
+  <div class="ccard"><div class="ctitle">Agents by Market</div><div class="csub"># of agents and % share</div><div class="ch ch-sm"><canvas id="c-mkt-agents"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">FX Tracker</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">Rate</th><th>Jan</th><th>Feb</th><th>Δ</th><th style="text-align:left">Impact</th></tr>
+      <tr><td>NGN/USD</td><td>1,458</td><td>1,458</td><td>Flat</td><td style="text-align:left">Neutral</td></tr>
+      <tr><td>ZAR/USD</td><td>16.27</td><td>16.00</td><td class="lo">-1.7%</td><td style="text-align:left">SA costs up slightly</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 4: STAFFING -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-staffing">
+<div class="callout dark"><strong>Goal:</strong> Where over/understaffed? Top 10 + attention list. <strong>P0</strong> · Taire + PMs</div>
+
+<div class="sec">Top 10 CX Accounts</div>
+<div class="ccard">
+  <div style="overflow-x:auto">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Account</th><th>Mkt</th><th>Billable</th><th>Actual</th><th>Buffer</th><th>Buf%</th><th>Agents</th><th>QA</th><th>TL/ATL</th></tr>
+    <tr class="bg-g"><td><strong>Almedia</strong></td><td>Lagos</td><td>111</td><td>120</td><td>10</td><td class="hi">8%</td><td>98/107</td><td>5/5 <span class="hi">(0%)</span></td><td>—</td></tr>
+    <tr class="bg-g"><td><strong>Outschool</strong></td><td>Lagos</td><td>76</td><td>85</td><td>9</td><td class="hi">12%</td><td>62/62</td><td>6/4 <span class="lo">(-33%)</span></td><td>—/6</td></tr>
+    <tr class="bg-g"><td><strong>Aurora</strong></td><td>Lagos</td><td>55</td><td>55</td><td>0</td><td class="hi">0%</td><td>45/45</td><td>6/6 <span class="hi">(0%)</span></td><td>—</td></tr>
+    <tr class="bg-a"><td><strong>Faire</strong></td><td>Lagos</td><td>34</td><td>40</td><td>6</td><td class="mid">18%</td><td>25/28</td><td>4/6 <span class="mid">(+50%)</span></td><td>—</td></tr>
+    <tr class="bg-r"><td><strong>CSI</strong></td><td>SA</td><td>30</td><td>16</td><td class="lo">-14</td><td class="lo">-47%</td><td>28/13</td><td>—/1</td><td>—</td></tr>
+    <tr class="bg-a"><td><strong>Curri</strong></td><td>Lag+SA</td><td>25</td><td>31</td><td>6</td><td class="mid">24%</td><td>23/26</td><td>2/3 <span class="mid">(+50%)</span></td><td>—/1</td></tr>
+    <tr class="bg-a"><td><strong>Finix</strong></td><td>Lagos</td><td>15</td><td>17</td><td>2</td><td>13%</td><td>13/15</td><td>1/1 <span class="hi">(0%)</span></td><td>—</td></tr>
+    <tr class="bg-a"><td><strong>Bask & Lather</strong></td><td>Lagos</td><td>12</td><td>14</td><td>2</td><td>17%</td><td>12/12</td><td>—/1</td><td>—</td></tr>
+    <tr class="bg-r"><td><strong>Sonovate</strong></td><td>Lagos</td><td>7</td><td>10</td><td>3</td><td class="lo">43%</td><td>5/8</td><td>1/1 <span class="hi">(0%)</span></td><td>—</td></tr>
+    <tr class="bg-r"><td><strong>Stream Hatchet</strong></td><td>Lagos</td><td>7</td><td>11</td><td>4</td><td class="lo">57%</td><td>6/8</td><td>1/1 <span class="hi">(0%)</span></td><td>—/1</td></tr>
+  </table>
+  <div class="csub" style="margin-top:4px;font-family:'DM Mono',monospace;"><span style="display:inline-block;width:10px;height:10px;background:#e6f4ee;border:1px solid #b6dfcd;margin-right:3px;vertical-align:middle;"></span> &lt;12% buffer <span style="display:inline-block;width:10px;height:10px;background:#fdf3e6;border:1px solid #f5d5a0;margin:0 3px 0 10px;vertical-align:middle;"></span> 12-30% <span style="display:inline-block;width:10px;height:10px;background:#fef2f2;border:1px solid #fecaca;margin:0 3px 0 10px;vertical-align:middle;"></span> &gt;30% or understaffed. QA/TL: billable/actual (buffer%).</div>
+  </div>
+</div>
+
+<div class="callout red"><strong>⚠ Accounts Needing Attention (buffer >30% or understaffed):</strong></div>
+<div class="ccard">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Account</th><th>Billable</th><th>Actual</th><th>Buffer%</th><th style="text-align:left">Issue</th></tr>
+    <tr class="bg-r"><td><strong>Backroads</strong></td><td>4</td><td>11</td><td class="lo">175%</td><td style="text-align:left">7 buffers on 4 billable — structurally unprofitable</td></tr>
+    <tr class="bg-r"><td><strong>Stream Hatchet</strong></td><td>7</td><td>11</td><td class="lo">57%</td><td style="text-align:left">4 excess heads</td></tr>
+    <tr class="bg-r"><td><strong>Sonovate</strong></td><td>7</td><td>10</td><td class="lo">43%</td><td style="text-align:left">3 excess heads</td></tr>
+    <tr class="bg-r"><td><strong>CSI</strong></td><td>30</td><td>16</td><td class="lo">-47%</td><td style="text-align:left">Understaffed by 14 — client scaling down?</td></tr>
+    <tr class="bg-a"><td><strong>Outschool BO</strong></td><td>15</td><td>21</td><td class="mid">40%</td><td style="text-align:left">6 buffers on back office</td></tr>
+  </table>
+</div>
+
+<div class="sec">GiftHealth — By Program</div>
+<div class="ccard">
+  <table class="dtbl">
+    <tr><th style="text-align:left">Program</th><th>Loc</th><th>Billable</th><th>Actual</th><th>Buffer</th><th>Buf%</th><th style="text-align:left">Status</th></tr>
+    <tr><td>Gastro</td><td>SA</td><td>45</td><td>43</td><td class="lo">-2</td><td>-4%</td><td style="text-align:left"><span class="rag rag-a"></span></td></tr>
+    <tr><td>Lilly SA</td><td>JHB+CPT</td><td>85</td><td>118</td><td>33</td><td class="mid">39%</td><td style="text-align:left"><span class="rag rag-a"></span>Training</td></tr>
+    <tr class="bg-r"><td>Lilly MO</td><td>Springfield</td><td>175</td><td>130</td><td class="lo">-45</td><td class="lo">-26%</td><td style="text-align:left"><span class="rag rag-r"></span>Attrition critical</td></tr>
+    <tr><td>Lilly Lagos</td><td>Lagos</td><td>85</td><td>128</td><td>43</td><td class="mid">51%</td><td style="text-align:left"><span class="rag rag-a"></span>W2 ramp</td></tr>
+    <tr class="tot"><td><strong>GH Total</strong></td><td></td><td>402</td><td>433</td><td>31</td><td>8%</td><td></td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 5: P&L FORECAST (WEEKLY MARK-TO-MARKET) -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-forecast">
+<div class="callout dark"><strong>Goal:</strong> Where will this month end? Weekly mark-to-market with persistence. <strong>P0 IMMEDIATE</strong> · Simone + Taire</div>
+
+<!-- STATUS BAR -->
+<div id="fc-status" style="background:#fff;border:1px solid #d8d6d0;padding:10px 14px;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.1em;">Month</span><br>
+      <select id="fc-month" onchange="fcLoadMonth()" style="font-family:'DM Mono',monospace;font-size:13px;padding:4px 8px;border:1px solid #d8d6d0;background:#fff;font-weight:600;">
+        <option value="2026-04">April 2026</option>
+        <option value="2026-05">May 2026</option>
+        <option value="2026-06">June 2026</option>
+      </select>
+    </div>
+    <div>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.1em;">Current Week</span><br>
+      <select id="fc-week" onchange="fcSave();fcRender()" style="font-family:'DM Mono',monospace;font-size:13px;padding:4px 8px;border:1px solid #d8d6d0;background:#fff;font-weight:600;">
+        <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option>
+      </select>
+    </div>
+    <div id="fc-updated" style="font-family:'DM Mono',monospace;font-size:11px;color:#888;"></div>
+  </div>
+  <div style="display:flex;gap:6px;">
+    <button onclick="fcMarkActual()" class="h-btn" style="background:#0a7c4e;color:#fff;border-color:#0a7c4e;font-weight:600;">Mark Week as Actual</button>
+    <button onclick="fcRecalc()" class="h-btn" style="font-weight:600;">Recalculate</button>
+    <button onclick="if(confirm('Reset all forecast data for this month?')){localStorage.removeItem(fcKey());fcInit();}" class="h-btn" style="color:#b91c1c;border-color:#b91c1c;">Reset</button>
+  </div>
+</div>
+
+<!-- SUMMARY KPIs -->
+<div id="fc-kpis" class="krow" style="grid-template-columns:repeat(6,1fr);"></div>
+
+<!-- CHARTS ROW -->
+<div class="g2">
+  <div class="ccard"><div class="ctitle">Weekly Revenue / COS / GP</div><div class="csub">USD thousands per week</div><div class="ch"><canvas id="c-fc-weekly"></canvas></div></div>
+  <div class="ccard"><div class="ctitle">Revenue by Project</div><div class="csub">Monthly total (all weeks summed)</div><div class="ch"><canvas id="c-fc-byproj"></canvas></div></div>
+</div>
+
+<!-- PROJECT CARDS -->
+<div class="sec">Project Detail — Click to Expand</div>
+<div id="fc-projects"></div>
+
+<!-- MONTHLY P&L TABLE -->
+<div class="sec">Monthly P&L Summary (auto-calculated from weekly inputs)</div>
+<div class="ccard"><div id="fc-pnl-table"></div></div>
+
+<!-- WEEKLY TREND TABLE -->
+<div class="sec">Weekly P&L Trend</div>
+<div class="ccard"><div id="fc-trend-table"></div></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 6: RAMP ECONOMICS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-ramp">
+<div class="callout dark"><strong>Goal:</strong> Track new program ramp. Select a project to model. <strong>P1</strong></div>
+
+<div class="sec">Select Project</div>
+<div class="ctrl"><label>Project</label>
+  <select id="ramp-sel" onchange="renderRamp()" style="font-size:13px;padding:6px;">
+    <option value="gh-sa">GiftHealth SA (Lilly — Dec 2024)</option>
+    <option value="gh-us">GiftHealth US (Springfield — Jan 2026)</option>
+    <option value="gh-lagos">GiftHealth Lagos (Feb 2026)</option>
+    <option value="9am">9am Health (Mar 2026)</option>
+    <option value="almedia-ai">Almedia Agentic (Mar 2026)</option>
+  </select>
+</div>
+
+<div id="ramp-content">
+  <div class="g2">
+    <div class="ccard"><div class="ctitle">Monthly Cost Stack</div><div class="csub">One-time (red) vs recurring (blue). Shows normalization.</div><div class="ch ch-lg"><canvas id="c-ramp-stack"></canvas></div></div>
+    <div class="ccard"><div class="ctitle">Gross Margin % Curve</div><div class="csub">Ramp → steady state</div><div class="ch ch-lg"><canvas id="c-ramp-gm"></canvas></div></div>
+  </div>
+  <div class="krow" style="grid-template-columns:repeat(4,1fr);">
+    <div class="kcard" style="--kc:#1a56db"><div class="klbl">Break-Even</div><div class="kval" id="r-be">Mo 5</div></div>
+    <div class="kcard" style="--kc:#333"><div class="klbl">3-Mo Cumul P&L</div><div class="kval" id="r-3m">—</div></div>
+    <div class="kcard" style="--kc:#333"><div class="klbl">6-Mo Cumul P&L</div><div class="kval" id="r-6m">—</div></div>
+    <div class="kcard" style="--kc:#0a7c4e"><div class="klbl">12-Mo Cumul P&L</div><div class="kval" id="r-12m">—</div></div>
+  </div>
+  <div id="ramp-table"></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TAB 7: INPUTS & TARGETS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="pane" id="p-inputs">
+<div class="callout dark"><strong>Configuration:</strong> Set targets, pricing, and assumptions. Editable fields save to browser. Changes inform dashboard context.</div>
+
+<div class="g2">
+  <div class="ccard">
+    <div class="ctitle">KPI Targets</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">KPI</th><th>Current Target</th><th style="text-align:left">Notes</th></tr>
+      <tr><td>CX Revenue (Dec run rate)</td><td><input class="fc-inp" style="width:120px;" id="inp-rev-tgt" value="$2.17M/mo ($26M)" onchange="saveInputs()"></td><td style="text-align:left"><input class="fc-inp" style="width:100%;text-align:left;" value="Growth: Q1 15%, Q2 25%, Q3 35%, Q4 25%" onchange="saveInputs()"></td></tr>
+      <tr><td>CX EBITDA</td><td><input class="fc-inp" style="width:120px;" value="7%+ margin" onchange="saveInputs()"></td><td style="text-align:left"><input class="fc-inp" style="width:100%;text-align:left;" value="~$120K/mo at scale" onchange="saveInputs()"></td></tr>
+      <tr><td>Cost/Agent NG</td><td><input class="fc-inp" style="width:120px;" value="$550" onchange="saveInputs()"></td><td style="text-align:left">Constant</td></tr>
+      <tr><td>Cost/Agent SA</td><td><input class="fc-inp" style="width:200px;" value="$1,100 (Q2) → $950 (Q3) → $700 (Q1 27)" onchange="saveInputs()"></td><td style="text-align:left">Glide path</td></tr>
+      <tr><td>Cost/Agent US</td><td><input class="fc-inp" style="width:120px;" value="$3,200" onchange="saveInputs()"></td><td style="text-align:left">Consolidated parent view</td></tr>
+      <tr><td>Budget Adherence</td><td><input class="fc-inp" style="width:120px;" value="19%" onchange="saveInputs()"></td><td style="text-align:left">OpEx as % of GR</td></tr>
+      <tr><td>Rev Concentration</td><td><input class="fc-inp" style="width:120px;" value="<55%" onchange="saveInputs()"></td><td style="text-align:left">GH share of CX</td></tr>
+      <tr><td>US Attrition</td><td><input class="fc-inp" style="width:120px;" value="<15%" onchange="saveInputs()"></td><td style="text-align:left">3-month trailing</td></tr>
+    </table>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">Pricing by Account</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">Account</th><th>Market</th><th>Rate $/hr</th><th style="text-align:left">Last COLA</th></tr>
+      <tr><td>GiftHealth (Lagos)</td><td>Lagos</td><td><input class="fc-inp" style="width:70px;" value="$13.85" onchange="saveInputs()"></td><td style="text-align:left">Feb 2026 (new ladder)</td></tr>
+      <tr><td>GiftHealth (SA)</td><td>SA</td><td><input class="fc-inp" style="width:70px;" value="$14.75" onchange="saveInputs()"></td><td style="text-align:left">Feb 2026</td></tr>
+      <tr><td>GiftHealth (US)</td><td>US</td><td><input class="fc-inp" style="width:70px;" value="$35.00" onchange="saveInputs()"></td><td style="text-align:left">n/a</td></tr>
+      <tr><td>Almedia</td><td>Lagos</td><td><input class="fc-inp" style="width:70px;" value="$10.25" onchange="saveInputs()"></td><td style="text-align:left;color:#b91c1c">None since 2024</td></tr>
+      <tr><td>All other Lagos</td><td>Lagos</td><td><input class="fc-inp" style="width:70px;" value="$12.50" onchange="saveInputs()"></td><td style="text-align:left">Various</td></tr>
+      <tr><td>CSI</td><td>SA</td><td><input class="fc-inp" style="width:70px;" value="$16.00" onchange="saveInputs()"></td><td style="text-align:left;color:#b91c1c">None since 2024</td></tr>
+      <tr><td>Kings of Neon</td><td>SA</td><td><input class="fc-inp" style="width:70px;" value="$14.75" onchange="saveInputs()"></td><td style="text-align:left">N/A</td></tr>
+      <tr><td>Curri (SA portion)</td><td>SA</td><td><input class="fc-inp" style="width:70px;" value="$14.75" onchange="saveInputs()"></td><td style="text-align:left;color:#b91c1c">None since 2024</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="ccard">
+    <div class="ctitle">Buffer Threshold Settings</div>
+    <div class="csub">Controls staffing tab row shading</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">Level</th><th>Threshold</th><th style="text-align:left">Color</th></tr>
+      <tr class="bg-g"><td>Healthy</td><td>&lt; <input class="fc-inp" style="width:50px;" id="buf-green" value="12" onchange="saveInputs()">%</td><td style="text-align:left">Green</td></tr>
+      <tr class="bg-a"><td>Watch</td><td><span id="buf-amber-lo">12</span>% - <input class="fc-inp" style="width:50px;" id="buf-amber" value="30" onchange="saveInputs()">%</td><td style="text-align:left">Amber</td></tr>
+      <tr class="bg-r"><td>Action Required</td><td>&gt; <span id="buf-red-lo">30</span>% or understaffed</td><td style="text-align:left">Red</td></tr>
+    </table>
+  </div>
+  <div class="ccard">
+    <div class="ctitle">Global Assumptions</div>
+    <table class="dtbl">
+      <tr><th style="text-align:left">Parameter</th><th>Value</th></tr>
+      <tr><td>OpEx ($/mo)</td><td><input class="fc-inp" style="width:100px;" id="inp-opex" value="370,000" onchange="saveInputs()"></td></tr>
+      <tr><td>Depreciation ($/mo)</td><td><input class="fc-inp" style="width:100px;" id="inp-dep" value="12,000" onchange="saveInputs()"></td></tr>
+      <tr><td>Hrs/Month</td><td><input class="fc-inp" style="width:100px;" value="173" onchange="saveInputs()"></td></tr>
+      <tr><td>NGN/USD</td><td><input class="fc-inp" style="width:100px;" value="1,458" onchange="saveInputs()"></td></tr>
+      <tr><td>ZAR/USD</td><td><input class="fc-inp" style="width:100px;" value="16.00" onchange="saveInputs()"></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="ccard">
+  <div class="ctitle">SA Cost/Agent Target Trajectory</div>
+  <table class="dtbl">
+    <tr><th style="text-align:left">Period</th><th>Target</th><th>Key Levers</th></tr>
+    <tr><td>Feb 2026 (actual)</td><td class="lo">$1,329</td><td style="text-align:left">Current state</td></tr>
+    <tr><td>Q2 2026</td><td class="mid">$1,100</td><td style="text-align:left">Innovocurve exit, EOR elimination (-$135)</td></tr>
+    <tr><td>Q3 2026</td><td class="mid">$950</td><td style="text-align:left">Transport optimization, scale efficiencies</td></tr>
+    <tr><td>Q4 2026</td><td>$800</td><td style="text-align:left">Tier 2 location (East London)</td></tr>
+    <tr><td>Q1 2027</td><td class="hi">$700</td><td style="text-align:left">Marginal cost at scale</td></tr>
+  </table>
+</div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+function go(id){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('act');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('act');});
+  document.getElementById('p-'+id).classList.add('act');
+  var m={core:0,costclient:1,market:2,staffing:3,forecast:4,ramp:5,inputs:6};
+  if(m[id]!==undefined)document.querySelectorAll('.tab')[m[id]].classList.add('act');
+  setTimeout(renderCharts,80);
+  setTimeout(cpUpdateTab,200);
+  if(currentUser)cpLogActivity(currentUser.displayName||currentUser.email,'viewed '+id);
+}
+
+Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.font.size=10;
+var CHS={};var MF={family:"'DM Mono',monospace",size:9};var GC='#e8e6e0';
+var DL={display:true,color:'#0f172a',font:{family:"'DM Mono',monospace",size:9,weight:500},anchor:'end',align:'end'};
+var DL_PCT={...DL,formatter:function(v){return v+'%';}};
+var DL_USD={...DL,formatter:function(v){return '$'+v;}};
+var DL_K={...DL,formatter:function(v){return '$'+v+'K';}};
+var DL_NONE={display:false};
+
+function mk(id,type,data,opts){var c=document.getElementById(id);if(!c)return;if(CHS[id])CHS[id].destroy();CHS[id]=new Chart(c.getContext('2d'),{type:type,data:data,options:{responsive:true,maintainAspectRatio:false,animation:{duration:120},plugins:{legend:{labels:{color:'#888',font:MF,boxWidth:8,padding:6},position:'bottom'},tooltip:{backgroundColor:'#0f172a',titleColor:'#fff',bodyColor:'#cbd5e1',bodyFont:MF},datalabels:DL_NONE},scales:type==='pie'||type==='doughnut'?{}:{x:{grid:{color:GC},ticks:{color:'#888',font:MF}},y:{grid:{color:GC},ticks:{color:'#888',font:MF}}},...opts}});}
+
+function renderCharts(){
+  // Revenue trajectory
+  mk('c-rev-traj','line',{labels:['Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[
+    {label:'Target',data:[1.57,1.66,1.71,1.76,1.81,1.88,1.95,2.02,2.07,2.12,2.17],borderColor:'#1a56db',backgroundColor:'rgba(26,86,219,.08)',fill:true,tension:.3,pointRadius:3,borderWidth:2},
+    {label:'Actual',data:[1.57],borderColor:'#0a7c4e',pointRadius:5,pointBackgroundColor:'#0a7c4e',borderWidth:2,spanGaps:false}
+  ]},{scales:{y:{ticks:{callback:function(v){return '$'+v.toFixed(1)+'M';}},min:1.4,max:2.3}},plugins:{datalabels:DL_NONE}});
+
+  // Cost vs target with labels
+  mk('c-cost-tgt','bar',{labels:['Nigeria','SA','US (Parent)'],datasets:[
+    {label:'Actual',data:[581,1329,3493],backgroundColor:['#b45309','#b91c1c','#b45309']},
+    {label:'Target',data:[550,1100,3200],backgroundColor:['#0a7c4e','#0a7c4e','#0a7c4e']}
+  ]},{scales:{y:{ticks:{callback:function(v){return '$'+v;}}}},plugins:{datalabels:{display:true,color:'#fff',font:{family:"'DM Mono',monospace",size:10,weight:700},formatter:function(v){return '$'+v;}}}});
+
+  // Revenue mix with labels
+  mk('c-mix','doughnut',{labels:['GH ($954K)','Almedia ($126K)','Outschool ($95K)','Faire ($87K)','Aurora ($40K)','Rest ($268K)'],
+    datasets:[{data:[954,126,95,87,40,268],backgroundColor:['#1a56db','#0a7c4e','#6d28d9','#b45309','#be185d','#cbd5e1'],borderWidth:0}]
+  },{plugins:{legend:{position:'right',labels:{font:{size:9}}},datalabels:{display:true,color:'#fff',font:{size:9,weight:700,family:"'DM Mono',monospace"},formatter:function(v,ctx){var t=ctx.chart.data.datasets[0].data.reduce(function(a,b){return a+b;},0);return Math.round(v/t*100)+'%';}}}});
+
+  // HC mix with labels
+  mk('c-hc-mix','doughnut',{labels:['GH (433)','Almedia (127)','Outschool (83)','Aurora (55)','Faire (40)','Rest (74)'],
+    datasets:[{data:[433,127,83,55,40,74],backgroundColor:['#1a56db','#0a7c4e','#6d28d9','#b45309','#be185d','#cbd5e1'],borderWidth:0}]
+  },{plugins:{legend:{position:'right',labels:{font:{size:9}}},datalabels:{display:true,color:'#fff',font:{size:9,weight:700,family:"'DM Mono',monospace"},formatter:function(v,ctx){var t=ctx.chart.data.datasets[0].data.reduce(function(a,b){return a+b;},0);return Math.round(v/t*100)+'%';}}}});
+
+  // Geo mix
+  mk('c-geo-mix','doughnut',{labels:['Lagos (435, 54%)','SA (191, 24%)','US (185, 23%)'],
+    datasets:[{data:[435,191,185],backgroundColor:['#1a56db','#b45309','#0a7c4e'],borderWidth:0}]
+  },{plugins:{legend:{position:'right',labels:{font:{size:9}}},datalabels:{display:true,color:'#fff',font:{size:10,weight:700,family:"'DM Mono',monospace"},formatter:function(v){return v;}}}});
+
+  // Client GM% ordered by size
+  mk('c-cgm','bar',{labels:['GH Overall','Almedia','Outschool','Aurora','Faire','CSI','Rest'],datasets:[
+    {label:'GM%',data:[15,45,42,56,68,30,30],backgroundColor:['#b91c1c','#0a7c4e','#0a7c4e','#0a7c4e','#0a7c4e','#b45309','#b45309']}
+  ]},{plugins:{legend:{display:false},datalabels:DL_PCT},scales:{y:{ticks:{callback:function(v){return v+'%';}}}}});
+
+  // Cost by market
+  mk('c-cost-mkt','bar',{labels:['Nigeria','SA','US (Parent)','US (GMC)'],datasets:[
+    {label:'Jan',data:[640,1409,0,7420],backgroundColor:'#d8d6d0'},
+    {label:'Feb',data:[581,1329,3493,5881],backgroundColor:'#1a56db'}
+  ]},{scales:{y:{ticks:{callback:function(v){return '$'+v;}}}},plugins:{datalabels:{display:true,font:{family:"'DM Mono',monospace",size:9},color:function(ctx){return ctx.datasetIndex===1?'#fff':'#0f172a';},formatter:function(v){return v?'$'+v:'';}}}});
+
+  // Market agents
+  mk('c-mkt-agents','bar',{labels:['Lagos','South Africa','Springfield'],datasets:[
+    {label:'Agents',data:[435,191,185],backgroundColor:['#1a56db','#b45309','#0a7c4e']}
+  ]},{indexAxis:'y',plugins:{datalabels:{display:true,color:'#fff',font:{size:11,weight:700,family:"'DM Mono',monospace"},formatter:function(v){return v+' ('+Math.round(v/811*100)+'%)';}}},scales:{x:{display:false}}});
+
+  renderRamp();
+}
+
+// Ramp economics
+var RAMP_DATA={
+  'gh-sa':{name:'GH SA Lilly',months:['Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
+    onetime:[213,0,0,0,0,0,0,0,0,0,0,0],travel:[11,11,11,11,6,0,0,0,0,0,0,0],buffer:[16,16,10,3,0,0,0,0,0,0,0,0],
+    payroll:[104,104,104,104,104,100,100,100,100,100,100,100],dep:[3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5],
+    rev:[94,191,191,191,191,191,191,191,191,191,191,191],be:'Mo 5'},
+  'gh-us':{name:'GH US Springfield',months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    onetime:[50,0,0,0,0,0,0,0,0,0,0,0],travel:[5,5,5,3,0,0,0,0,0,0,0,0],buffer:[0,0,0,0,0,0,0,0,0,0,0,0],
+    payroll:[148,375,420,450,450,450,450,450,450,450,450,450],dep:[12,12,12,12,12,12,12,12,12,12,12,12],
+    rev:[203,507,600,640,650,650,650,650,650,650,650,650],be:'Mo 1'},
+  'gh-lagos':{name:'GH Lagos Lilly',months:['Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan27'],
+    onetime:[85,0,0,0,0,0,0,0,0,0,0,0],travel:[8,8,4,0,0,0,0,0,0,0,0,0],buffer:[12,12,6,0,0,0,0,0,0,0,0,0],
+    payroll:[55,55,50,48,48,48,48,48,48,48,48,48],dep:[2,2,2,2,2,2,2,2,2,2,2,2],
+    rev:[40,120,180,200,200,200,200,200,200,200,200,200],be:'Mo 3'},
+  '9am':{name:'9am Health',months:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan27','Feb27'],
+    onetime:[30,0,0,0,0,0,0,0,0,0,0,0],travel:[3,3,0,0,0,0,0,0,0,0,0,0],buffer:[0,0,0,0,0,0,0,0,0,0,0,0],
+    payroll:[45,90,120,130,130,130,130,130,130,130,130,130],dep:[2,2,2,2,2,2,2,2,2,2,2,2],
+    rev:[0,60,120,150,160,160,160,160,160,160,160,160],be:'Mo 5'},
+  'almedia-ai':{name:'Almedia Agentic',months:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan27','Feb27'],
+    onetime:[15,0,0,0,0,0,0,0,0,0,0,0],travel:[0,0,0,0,0,0,0,0,0,0,0,0],buffer:[0,0,0,0,0,0,0,0,0,0,0,0],
+    payroll:[8,15,20,25,25,25,25,25,25,25,25,25],dep:[0,0,0,0,0,0,0,0,0,0,0,0],
+    rev:[5,30,50,60,60,60,60,60,60,60,60,60],be:'Mo 3'}
+};
+
+function renderRamp(){
+  var sel=document.getElementById('ramp-sel').value;
+  var d=RAMP_DATA[sel];if(!d)return;
+  document.getElementById('r-be').textContent=d.be;
+  var cum=0,c3=0,c6=0,c12=0;
+  var gm_pct=[];
+  for(var i=0;i<12;i++){
+    var cost=d.onetime[i]+d.travel[i]+d.buffer[i]+d.payroll[i]+d.dep[i];
+    var pl=d.rev[i]-cost;cum+=pl;
+    if(i===2)c3=cum;if(i===5)c6=cum;if(i===11)c12=cum;
+    gm_pct.push(d.rev[i]>0?Math.round((d.rev[i]-cost)/d.rev[i]*100):-999);
   }
+  document.getElementById('r-3m').textContent=(c3>=0?'$':'−$')+Math.abs(Math.round(c3))+'K';
+  document.getElementById('r-6m').textContent=(c6>=0?'$':'−$')+Math.abs(Math.round(c6))+'K';
+  document.getElementById('r-12m').textContent=(c12>=0?'$':'−$')+Math.abs(Math.round(c12))+'K';
 
-  document.getElementById('h-period').innerHTML=d.period;
+  mk('c-ramp-stack','bar',{labels:d.months,datasets:[
+    {label:'One-Time',data:d.onetime,backgroundColor:'#b91c1c'},
+    {label:'Travel',data:d.travel,backgroundColor:'#b45309'},
+    {label:'Buffer',data:d.buffer,backgroundColor:'#6d28d9'},
+    {label:'Payroll',data:d.payroll,backgroundColor:'#1a56db'},
+    {label:'Depreciation',data:d.dep,backgroundColor:'#94a3b8'}
+  ]},{plugins:{datalabels:DL_NONE},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:function(v){return '$'+v+'K';}}}}});
 
-  // Month pills with status badges
-  const mb=document.getElementById('month-bar');
-  mb.innerHTML=visibleMonths.map(m=>{
-    const st=getStatus(curClient,m);
-    const badge='<span class="status-badge '+st+'">'+st.toUpperCase()+'</span>';
-    return '<button class="month-pill'+(m===curMonth?' act':'')+'" onclick="switchMonth(\''+m+'\',this)">'+(MONTH_NAMES[m]||m)+' 2026'+badge+'</button>';
-  }).join('');
+  var gm_clean=gm_pct.map(function(v){return v===-999?null:v;});
+  mk('c-ramp-gm','line',{labels:d.months,datasets:[
+    {label:'GM%',data:gm_clean,borderColor:'#1a56db',tension:.3,pointRadius:4,fill:true,backgroundColor:'rgba(26,86,219,.06)',spanGaps:true},
+    {label:'Target',data:Array(12).fill(43),borderColor:'#0a7c4e',borderDash:[4,4],pointRadius:0}
+  ]},{scales:{y:{ticks:{callback:function(v){return v+'%';}},min:-50,max:60}},plugins:{datalabels:{display:true,color:'#0f172a',font:{family:"'DM Mono',monospace",size:9},formatter:function(v){return v!==null?v+'%':'';},align:'top'}}});
+}
 
-  // Status bar + action buttons
-  const st=getStatus(curClient,curMonth);
-  let statusHTML='';
-  if(st==='draft'){
-    statusHTML='<div class="inv-status-bar draft-bar"><strong>DRAFT</strong> \u2014 This invoice is in draft. Only Hugo staff can view it.</div>';
-    if(userIsAdm)statusHTML+='<div class="invoice-actions"><button class="inv-btn submit" onclick="setInvoiceStatus(\''+curClient+'\',\''+curMonth+'\',\'submitted\')">Submit to GiftHealth</button></div>';
-  } else if(st==='submitted'){
-    const meta=invoiceStatuses[curClient+'_'+curMonth]||{};
-    const by=meta.submittedBy||'';
-    statusHTML='<div class="inv-status-bar submitted-bar"><strong>SUBMITTED</strong> \u2014 Pending GiftHealth review.'+(by?' Submitted by '+by:'')+'</div>';
-    if(userIsAdm)statusHTML+='<div class="invoice-actions"><button class="inv-btn retract" onclick="setInvoiceStatus(\''+curClient+'\',\''+curMonth+'\',\'draft\')">Retract to Draft</button></div>';
-    if(userIsApprover)statusHTML+='<div class="invoice-actions"><button class="inv-btn accept" onclick="setInvoiceStatus(\''+curClient+'\',\''+curMonth+'\',\'accepted\')">Accept Invoice</button></div>';
-  } else if(st==='accepted'){
-    const meta=invoiceStatuses[curClient+'_'+curMonth]||{};
-    const by=meta.acceptedBy||'';
-    statusHTML='<div class="inv-status-bar accepted-bar"><strong>ACCEPTED</strong> \u2014 Invoice accepted.'+(by?' Approved by '+by:'')+'</div>';
-    if(userIsAdm)statusHTML+='<div class="invoice-actions"><button class="inv-btn retract" onclick="setInvoiceStatus(\''+curClient+'\',\''+curMonth+'\',\'draft\')">Retract to Draft</button><button class="inv-btn retract" onclick="setInvoiceStatus(\''+curClient+'\',\''+curMonth+'\',\'submitted\')" style="background:#d97706">Move to Submitted</button></div>';
+// ═══ FORECAST ENGINE ═══
+var FC_PROJECTS=[
+  {id:'gh-africa',name:'GH Africa',market:'Lagos+SA',mktColor:'#1a56db',rate:14.10,otRate:21.15,costHr:5.50,commission:0,software:0,bhc:258,buf:30,indirect:8000,prevRev:535},
+  {id:'gh-us',name:'GH US',market:'Springfield',mktColor:'#0a7c4e',rate:35.00,otRate:52.50,costHr:23.87,commission:0,software:0,bhc:155,buf:0,indirect:15000,prevRev:507},
+  {id:'9am',name:'9am Health',market:'Springfield',mktColor:'#0a7c4e',rate:35.00,otRate:52.50,costHr:23.87,commission:0,software:0,bhc:22,buf:0,indirect:2000,prevRev:0},
+  {id:'almedia',name:'Almedia',market:'Lagos',mktColor:'#1a56db',rate:10.25,otRate:15.38,costHr:2.60,commission:0,software:0,bhc:111,buf:10,indirect:4000,prevRev:126},
+  {id:'outschool',name:'Outschool',market:'Lagos',mktColor:'#1a56db',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:76,buf:9,indirect:3000,prevRev:95},
+  {id:'aurora',name:'Aurora',market:'Lagos',mktColor:'#1a56db',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:55,buf:0,indirect:2000,prevRev:40},
+  {id:'faire',name:'Faire',market:'Lagos',mktColor:'#1a56db',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:34,buf:6,indirect:1500,prevRev:87},
+  {id:'csi',name:'CSI',market:'SA',mktColor:'#b45309',rate:16.00,otRate:24.00,costHr:6.50,commission:0,software:0,bhc:16,buf:0,indirect:1000,prevRev:30},
+  {id:'curri',name:'Curri',market:'Lagos+SA',mktColor:'#6d28d9',rate:12.50,otRate:18.75,costHr:3.50,commission:0,software:0,bhc:25,buf:6,indirect:1500,prevRev:25},
+  {id:'finix',name:'Finix',market:'Lagos',mktColor:'#1a56db',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:15,buf:2,indirect:800,prevRev:37},
+  {id:'other-cx',name:'Other CX (14)',market:'Lagos',mktColor:'#1a56db',rate:12.50,otRate:18.75,costHr:2.60,commission:0,software:0,bhc:38,buf:16,indirect:3000,prevRev:97}
+];
+var FC_HRS_WK=43.25; // 173/4
+var FC_OPEX=370000;var FC_DEP=12000;
+var FC_MKT_COLORS={'Lagos':'#1a56db','Lagos+SA':'#6d28d9','Springfield':'#0a7c4e','SA':'#b45309'};
+
+function getWeeksInMonth(monthStr){
+  // Returns 4 or 5 based on how many Mon-Fri work weeks fit
+  var parts=monthStr.split('-');var y=+parts[0],m=+parts[1];
+  var d1=new Date(y,m-1,1).getDay(); // 0=Sun
+  var daysInMonth=new Date(y,m,0).getDate();
+  // Count Mondays
+  var mondays=0;for(var d=1;d<=daysInMonth;d++){if(new Date(y,m-1,d).getDay()===1)mondays++;}
+  return mondays>=5?5:4;
+}
+function saveInputs(){/* Inputs tab persistence placeholder */}
+
+function fcKey(){return 'hugo-cx-forecast-'+document.getElementById('fc-month').value;}
+
+function fcDefaultData(){
+  var numWks=getWeeksInMonth(document.getElementById('fc-month').value);
+  var d={currentWeek:1,numWeeks:numWks,lastUpdated:new Date().toISOString(),opex:FC_OPEX,dep:FC_DEP,projects:{}};
+  FC_PROJECTS.forEach(function(p){
+    var wks={};
+    for(var i=1;i<=numWks;i++){wks['w'+i]={bhc:p.bhc,buf:p.buf,stdHrs:null,otHrs:0,added:0,lost:0,isActual:false};}
+    d.projects[p.id]={
+      fixed:{rate:p.rate,otRate:p.otRate,costHr:p.costHr,commission:p.commission,software:p.software,indirect:p.indirect,useHistorical:true},
+      growth:{enabled:false,hc:0,startWeek:3},
+      material:{enabled:false,oneTime:0,recurring:0,desc:''},
+      weeks:wks
+    };
+  });
+  return d;
+}
+
+var fcData=null;
+function fcInit(){
+  var raw=localStorage.getItem(fcKey());
+  if(raw){try{fcData=JSON.parse(raw);}catch(e){fcData=fcDefaultData();}}
+  else{fcData=fcDefaultData();}
+  // Ensure numWeeks
+  var numWks=getWeeksInMonth(document.getElementById('fc-month').value);
+  if(!fcData.numWeeks)fcData.numWeeks=numWks;
+  // Migrate: ensure growth/material exist; add w5 if needed
+  for(var pid in fcData.projects){
+    var p=fcData.projects[pid];
+    if(!p.growth)p.growth={enabled:false,hc:0,startWeek:3};
+    if(!p.material)p.material={enabled:false,oneTime:0,recurring:0,desc:''};
+    if(numWks>=5&&!p.weeks.w5){var last=p.weeks['w'+(numWks-1)]||p.weeks.w4;p.weeks.w5={bhc:last.bhc,buf:last.buf,stdHrs:null,otHrs:0,added:0,lost:0,isActual:false};}
   }
-  document.getElementById('inv-status-area').innerHTML=statusHTML;
+  // Update week selector
+  var wkSel=document.getElementById('fc-week');
+  var numW=fcData.numWeeks||4;
+  wkSel.innerHTML='';
+  for(var i=1;i<=numW;i++){var o=document.createElement('option');o.value=i;o.textContent='Week '+i;wkSel.appendChild(o);}
+  wkSel.value=fcData.currentWeek;
+  fcRender();
+}
+function fcLoadMonth(){fcInit();}
+function fcSave(){
+  fcData.currentWeek=+document.getElementById('fc-week').value;
+  fcData.lastUpdated=new Date().toISOString();
+  localStorage.setItem(fcKey(),JSON.stringify(fcData));
+}
+function fcRecalc(){fcSave();fcRender();}
+function fcMarkActual(){
+  var cw=+document.getElementById('fc-week').value;
+  for(var pid in fcData.projects){
+    var wk=fcData.projects[pid].weeks['w'+cw];
+    if(wk)wk.isActual=true;
+  }
+  var maxW=fcData.numWeeks||4;
+  if(cw<maxW){fcData.currentWeek=cw+1;document.getElementById('fc-week').value=cw+1;}
+  fcSave();fcRender();
+}
 
-  document.getElementById('h-stats').innerHTML=d.stats.map(s=>'<div class="h-stat"><div class="h-stat-val"'+(s.color?' style="color:'+s.color+'"':'')+'>'+s.val+'</div><div class="h-stat-lbl">'+s.lbl+'</div></div>').join('');
-  document.getElementById('eq-summary').innerHTML='<div style="margin-bottom:6px">'+d.summary+'</div><div class="exp">'+d.summaryExp+'</div>';
-  // Pays
-  const ep=d.eqPays;
-  let ph='<h3>Invoiced = contracted production + training'+(ep.wknd?' + weekend':'')+(ep.ot?' + overtime':'')+'</h3><div class="eq-row"><div class="eq-block prod"><div class="eq-val" style="color:#0d9488">'+ep.prod.toLocaleString()+'</div><div class="eq-lbl">Production<br>(contracted)</div></div><div class="eq-op">+</div><div class="eq-block train"><div class="eq-val" style="color:#2563eb">'+ep.train.toLocaleString()+'</div><div class="eq-lbl">Training<br>(contracted)</div></div>';
-  if(ep.wknd)ph+='<div class="eq-op">+</div><div class="eq-block" style="background:#fefce8;border:1px solid #fde68a"><div class="eq-val" style="color:#a16207">'+ep.wknd.toLocaleString()+'</div><div class="eq-lbl">Weekend<br>(1.2x)</div></div>';
-  if(ep.ot)ph+='<div class="eq-op">+</div><div class="eq-block ot"><div class="eq-val" style="color:#dc2626">'+ep.ot.toLocaleString()+'</div><div class="eq-lbl">Overtime<br>(20%)</div></div>';
-  ph+='<div class="eq-op">=</div><div class="eq-block invoice"><div class="eq-val" style="color:#16a34a">'+ep.hrs.toLocaleString()+'</div><div class="eq-lbl">Invoiced hrs</div></div><div class="eq-op">\u2192</div><div class="eq-block invoice"><div class="eq-val" style="color:#16a34a">'+ep.amt+'</div><div class="eq-lbl">Total invoice</div></div></div>';
-  document.getElementById('eq-pays').innerHTML=ph;
-  const pv=d.eqProvides;
-  document.getElementById('eq-provides').innerHTML='<h3>Total provided = assembled (contracted + buffer) + training (contracted + buffer)</h3><div class="eq-row"><div class="eq-block assembled"><div class="eq-val" style="color:#d97706">'+pv.asmC+'</div><div class="eq-lbl">Assembled<br>(contracted)</div></div><div class="eq-op">+</div><div class="eq-block asm-buf"><div class="eq-val" style="color:#7c3aed">'+pv.asmB+'</div><div class="eq-lbl">Assembled<br>(buffer)</div></div><div class="eq-op">+</div><div class="eq-block train"><div class="eq-val" style="color:#2563eb">'+pv.trainC.toLocaleString()+'</div><div class="eq-lbl">Training<br>(contracted)</div></div><div class="eq-op">+</div><div class="eq-block buffer"><div class="eq-val" style="color:#7c3aed">'+pv.trainB.toLocaleString()+'</div><div class="eq-lbl">Training<br>(buffer)</div></div><div class="eq-op">=</div><div class="eq-block total-box"><div class="eq-val" style="color:#0d9488">'+(typeof pv.total==="number"?pv.total.toLocaleString():pv.total)+'</div><div class="eq-lbl">Total provided</div></div></div><div class="eq-note" style="--nc:#d97706;--nb:#fffbeb;margin-top:14px"><strong style="color:#d97706">Note:</strong> Assembled includes contracted + buffer production'+(curMonth==='mar'?', weekend,':',')+' and overtime. Training never appears in Assembled.</div>';
-  // Scenarios
-  document.getElementById('eq-scenarios').innerHTML='<div class="scenario-grid">'+d.scenarios.map(s=>'<div class="scenario-card" style="--sc:'+s.color+'"><div class="scenario-num">Scenario</div><div class="scenario-title" style="color:'+s.color+'">'+s.title+'</div><div class="scenario-body">'+s.body+'</div><div class="scenario-example" style="background:'+s.exBg+';border-left:3px solid '+s.color+'"><div class="ex-label" style="color:'+s.color+'">'+s.ex+'</div><div class="ex-data">'+s.data+'</div></div></div>').join('')+'</div>';
-  // Summary
-  document.getElementById('summary-content').innerHTML='<div class="sec-sm" style="margin-top:0">Other workflows (steady state)</div><div class="callout '+d.otherCallout+'">'+d.otherNote+'</div><div class="card"><div style="overflow-x:auto">'+d.otherTable+'</div></div><div class="sec-sm">Lilly workflow (SA, Lagos, Missouri)</div><div class="callout amber">'+d.lillyCallout+'</div><div class="card"><div style="overflow-x:auto">'+d.lillyTable+'</div></div>';
-  // Expand triggers
-  document.querySelectorAll('.expand-trigger').forEach(tr=>{tr.onclick=function(e){if(e.target.closest('.cbadge'))return;const t=this.getAttribute('data-target'),o=this.classList.toggle('open');document.querySelectorAll('#'+t).forEach(d=>d.classList.toggle('open',o));};});
-  // Recon
-  const rb=document.getElementById('recon-box');rb.innerHTML='';
-  d.recon.forEach(r=>{const tot=r.prod+r.train,sc=Math.max(tot,r.asm+r.buf,20000),div=document.createElement('div');div.className='recon-item';
-  div.innerHTML='<div class="recon-head"><div class="recon-label">'+r.label+'<small>'+r.sub+'</small></div><div class="recon-val">Invoiced: '+tot.toLocaleString()+' hrs</div></div><div class="bar-line"><span class="bar-tag">Invoiced</span><div class="bar-track">'+(r.prod>0?'<div class="bar-fill inv-prod" style="width:'+(r.prod/sc*100).toFixed(1)+'%" data-tip="Production: '+r.prod.toLocaleString()+'">'+(r.prod>800?r.prod.toLocaleString():'')+'</div>':'')+(r.train>0?'<div class="bar-fill inv-train" style="width:'+(r.train/sc*100).toFixed(1)+'%" data-tip="Training: '+r.train.toLocaleString()+'">'+(r.train>400?r.train.toLocaleString():'')+'</div>':'')+'</div></div><div class="bar-line"><span class="bar-tag">Buffer</span><div class="bar-track">'+(r.buf>0?'<div class="bar-fill buf" style="width:'+(r.buf/sc*100).toFixed(1)+'%" data-tip="Buffer: '+r.buf.toLocaleString()+'">'+r.buf.toLocaleString()+'</div>':'<div class="bar-fill asm-zero">0</div>')+'</div></div><div class="bar-line"><span class="bar-tag">Assembled</span><div class="bar-track">'+(r.asm>0?'<div class="bar-fill asm" style="width:'+(r.asm/sc*100).toFixed(1)+'%" data-tip="Assembled: '+r.asm.toLocaleString()+'">'+r.asm.toLocaleString()+'</div>':'<div class="bar-fill asm-zero">0 \u2014 '+(r.train>0?"training":"not tracked")+'</div>')+'</div></div><div class="recon-comment">'+r.comment+'</div>';
-  rb.appendChild(div);});
-  // Calendar
-  const wks=d.weeks;
-  function bCal(waves){let h='<div class="cal-grid"><div class="cal-hdr">Wave / Cohort</div>';wks.forEach(w=>h+='<div class="cal-hdr">'+w.l+'<br><span style="font-weight:400;font-size:8px;opacity:.6">'+w.d+'</span></div>');waves.forEach(w=>{h+='<div class="cal-row-label"><strong>'+w.name+'</strong><small>'+w.count+'</small></div>';w.wk.forEach(s=>{const c=s==='prod'?'prod':s==='train'?'train':s==='mixed'?'mixed':'empty';h+='<div class="cal-cell '+c+'">'+(s==='prod'?'Production':s==='train'?'Training':s==='mixed'?'Train\u2192Prod':'\u2014')+'</div>';});});return h+'</div>';}
-  document.getElementById('cal-content').innerHTML='<div class="sec-sm" style="margin-top:0">Other workflows</div><div class="cal-section">'+bCal(d.calOther)+'<div class="cal-footnote">'+d.calOtherNote+'</div></div><div class="sec-sm">Lilly \u2014 South Africa</div><div class="cal-section">'+bCal(d.calSA)+'</div><div class="sec-sm">Lilly \u2014 Lagos</div><div class="cal-section">'+bCal(d.calLagos)+'</div><div class="sec-sm">Lilly \u2014 Missouri</div><div class="cal-section">'+bCal(d.calMO)+'</div>';
+function fcCalcProject(pid,wNum){
+  var p=fcData.projects[pid];if(!p)return{rev:0,cos:0,gm:0};
+  var f=p.fixed,w=p.weeks['w'+wNum];if(!w)return{rev:0,cos:0,gm:0};
+  // Growth: add HC from startWeek onward
+  var growthHC=0;
+  if(p.growth&&p.growth.enabled&&wNum>=p.growth.startWeek){growthHC=p.growth.hc||0;}
+  var effBHC=w.bhc+growthHC;
+  var stdHrs=w.stdHrs!==null&&w.stdHrs!==''?+w.stdHrs:(effBHC*FC_HRS_WK);
+  var rev=(stdHrs*f.rate)+(w.otHrs*f.otRate);
+  var agentCost=(effBHC+w.buf)*f.costHr*FC_HRS_WK;
+  var otCost=w.otHrs*f.costHr*1.5;
+  var attrCost=w.lost*f.costHr*FC_HRS_WK*0.5;
+  var commission=rev*(f.commission/100);
+  var softwareWk=f.software;
+  var numW=fcData&&fcData.numWeeks?fcData.numWeeks:4;
+  var indirectWk=f.indirect/numW;
+  // Material: one-time in startWeek (or w1), recurring /4 each week
+  var materialCost=0;
+  if(p.material&&p.material.enabled){
+    materialCost+=(p.material.recurring||0)/numW;
+    if(wNum===(p.growth&&p.growth.startWeek||1)){materialCost+=(p.material.oneTime||0);}
+  }
+  var cos=agentCost+otCost+attrCost+commission+softwareWk+indirectWk+materialCost;
+  return{rev:rev,cos:cos,gm:rev-cos,bhc:effBHC,buf:w.buf,stdHrs:stdHrs,util:effBHC>0?stdHrs/(effBHC*FC_HRS_WK):0};
+}
 
-  // Admin panel: invoice statuses
-  if(userIsAdm){
-    const invEl=document.getElementById('admin-invoices');
-    if(invEl){
-      let ih='';
-      allMonths.forEach(m=>{
-        const s=getStatus(curClient,m);
-        const meta=invoiceStatuses[curClient+'_'+m]||{};
-        const color=s==='accepted'?'#22c55e':s==='submitted'?'#f5cf46':'#555';
-        ih+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #222"><div style="width:8px;height:8px;background:'+color+';flex-shrink:0"></div><span>'+(MONTH_NAMES[m]||m)+'</span><span style="color:'+color+';font-weight:600;margin-left:auto">'+s.toUpperCase()+'</span></div>';
-      });
-      invEl.innerHTML=ih;
+function fcRender(){
+  var cw=+document.getElementById('fc-week').value;
+  var NW=fcData.numWeeks||4;
+  var updated=fcData.lastUpdated?new Date(fcData.lastUpdated).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'Never';
+  document.getElementById('fc-updated').innerHTML='Updated: '+updated+' · Week '+cw+' of '+NW;
+
+  // Compute all
+  var weekTotals=[];for(var i=0;i<NW;i++){weekTotals.push({rev:0,cos:0,gm:0});}
+  var projMonthly={};
+  FC_PROJECTS.forEach(function(pdef){
+    var pm={rev:0,cos:0,gm:0,bhc:0,rate:fcData.projects[pdef.id]?fcData.projects[pdef.id].fixed.rate:pdef.rate};
+    for(var wi=1;wi<=NW;wi++){
+      var r=fcCalcProject(pdef.id,wi);
+      weekTotals[wi-1].rev+=r.rev;weekTotals[wi-1].cos+=r.cos;weekTotals[wi-1].gm+=r.gm;
+      pm.rev+=r.rev;pm.cos+=r.cos;pm.gm+=r.gm;pm.bhc=r.bhc||pm.bhc;
     }
-  }
+    projMonthly[pdef.id]=pm;
+  });
+
+  var totalRev=weekTotals.reduce(function(s,w){return s+w.rev;},0);
+  var totalCOS=weekTotals.reduce(function(s,w){return s+w.cos;},0);
+  var totalGP=totalRev-totalCOS;
+  var totalGM=totalRev>0?(totalGP/totalRev*100):0;
+  var ebitda=totalGP-fcData.opex-fcData.dep;
+
+  // KPIs
+  var kh=document.getElementById('fc-kpis');
+  kh.innerHTML=
+    '<div class="kcard" style="--kc:#1a56db"><div class="klbl">Revenue</div><div class="kval">$'+(totalRev/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:#b91c1c"><div class="klbl">COS</div><div class="kval">$'+(totalCOS/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:#0a7c4e"><div class="klbl">Gross Profit</div><div class="kval">$'+(totalGP/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:'+(totalGM>=35?'#0a7c4e':totalGM>=25?'#b45309':'#b91c1c')+'"><div class="klbl">GM%</div><div class="kval">'+totalGM.toFixed(1)+'%</div></div>'+
+    '<div class="kcard" style="--kc:#333"><div class="klbl">OpEx</div><div class="kval">$'+(fcData.opex/1e3).toFixed(0)+'K</div></div>'+
+    '<div class="kcard" style="--kc:'+(ebitda>=0?'#0a7c4e':'#b91c1c')+'"><div class="klbl">EBITDA</div><div class="kval">$'+(ebitda/1e3).toFixed(0)+'K</div></div>';
+
+  // Weekly chart - GM% on secondary axis
+  var wkLabels=[];for(var i=1;i<=NW;i++){wkLabels.push('W'+i);}
+  var wkGmPct=weekTotals.map(function(w){return w.rev>0?Math.round(w.gm/w.rev*100):0;});
+  mk('c-fc-weekly','bar',{labels:wkLabels,datasets:[
+    {label:'Revenue',data:weekTotals.map(function(w){return Math.round(w.rev/1e3);}),backgroundColor:'#1a56db',yAxisID:'y'},
+    {label:'COS',data:weekTotals.map(function(w){return Math.round(w.cos/1e3);}),backgroundColor:'#cbd5e1',yAxisID:'y'},
+    {label:'GM%',data:wkGmPct,type:'line',borderColor:'#0a7c4e',backgroundColor:'rgba(10,124,78,.1)',pointRadius:5,pointBackgroundColor:'#0a7c4e',borderWidth:2,fill:false,yAxisID:'y1'}
+  ]},{plugins:{datalabels:{display:true,color:function(ctx){return ctx.datasetIndex===2?'#0a7c4e':'#0f172a';},font:{size:9,family:"'DM Mono',monospace",weight:function(ctx){return ctx.datasetIndex===2?700:500;}},formatter:function(v,ctx){return ctx.datasetIndex===2?v+'%':'$'+v+'K';},align:function(ctx){return ctx.datasetIndex===2?'top':'end';}}},scales:{y:{ticks:{callback:function(v){return '$'+v+'K';}},position:'left'},y1:{ticks:{callback:function(v){return v+'%';}},position:'right',grid:{drawOnChartArea:false},min:0,max:60}}});
+
+  // By-project chart with MoM comparison
+  var projLabels=[],projRevs=[],projPrev=[],projColors=[];
+  FC_PROJECTS.forEach(function(pdef){var pm=projMonthly[pdef.id];projLabels.push(pdef.name);projRevs.push(Math.round(pm.rev/1e3));projPrev.push(pdef.prevRev||0);projColors.push(pdef.mktColor||'#1a56db');});
+  mk('c-fc-byproj','bar',{labels:projLabels,datasets:[
+    {label:'Prior Month',data:projPrev,backgroundColor:'#d8d6d0'},
+    {label:'This Month Forecast',data:projRevs,backgroundColor:projColors}
+  ]},{indexAxis:'y',plugins:{datalabels:{display:true,font:{size:9,weight:700,family:"'DM Mono',monospace"},color:function(ctx){return ctx.datasetIndex===1?'#fff':'#888';},formatter:function(v,ctx){if(ctx.datasetIndex===0)return v?'$'+v+'K':'';var prev=projPrev[ctx.dataIndex];var delta=prev>0?Math.round((v-prev)/prev*100):0;var arrow=v>prev?'▲':v<prev?'▼':'';return '$'+v+'K'+(prev>0?' '+arrow+delta+'%':'');}}},scales:{x:{ticks:{callback:function(v){return '$'+v+'K';}}}}});
+
+  // Project cards
+  var ph=document.getElementById('fc-projects');
+  var html='';
+  FC_PROJECTS.forEach(function(pdef){
+    var pd=fcData.projects[pdef.id];if(!pd)return;
+    var pm=projMonthly[pdef.id];
+    var gmPct=pm.rev>0?(pm.gm/pm.rev*100).toFixed(0):'0';
+    var gmClass=+gmPct>=35?'hi':(+gmPct>=20?'mid':'lo');
+    var mktCol=pdef.mktColor||'#1a56db';
+
+    html+='<div class="fc-card" id="fc-card-'+pdef.id+'" style="border-top:3px solid '+mktCol+';">';
+    html+='<div class="fc-card-hd" onclick="this.parentElement.classList.toggle(\'open\')">';
+    html+='<div style="display:flex;align-items:center;gap:10px;"><span class="fc-arrow">▶</span><span class="fc-name">'+pdef.name+'</span><span class="pill" style="font-size:8px;background:'+mktCol+'15;color:'+mktCol+';border-color:'+mktCol+'50;">'+pdef.market+'</span></div>';
+    html+='<div class="fc-mini"><span>Rev: $'+(pm.rev/1e3).toFixed(0)+'K</span><span>GM: <span class="'+gmClass+'">'+gmPct+'%</span></span><span>HC: '+pm.bhc+'</span></div>';
+    html+='</div>';
+    html+='<div class="fc-card-bd">';
+
+    // Fixed inputs row
+    html+='<div style="margin:10px 0 6px;font-family:\'DM Mono\',monospace;font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.08em;">Set-once Inputs</div>';
+    html+='<div class="fc-set-row">';
+    html+='<div class="fc-set-item"><label>Bill Rate ($/hr)</label><input value="'+pd.fixed.rate.toFixed(2)+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.rate=+this.value;fcSave();fcRender()"></div>';
+    html+='<div class="fc-set-item"><label>OT Rate ($/hr)</label><input value="'+pd.fixed.otRate.toFixed(2)+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.otRate=+this.value;fcSave();fcRender()"></div>';
+    html+='<div class="fc-set-item"><label>Cost/Hr ($)</label><input value="'+pd.fixed.costHr.toFixed(2)+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.costHr=+this.value;fcSave();fcRender()"></div>';
+    html+='<div class="fc-set-item"><label>Indirect ($/mo)</label><input value="'+pd.fixed.indirect+'" onchange="fcData.projects[\''+pdef.id+'\'].fixed.indirect=+this.value;fcSave();fcRender()"></div>';
+    html+='</div>';
+
+    // Growth toggle
+    var g=pd.growth||{enabled:false,hc:0,startWeek:3};
+    html+='<div style="display:flex;gap:16px;align-items:flex-start;margin:6px 0 8px;flex-wrap:wrap;">';
+    html+='<div style="background:'+(g.enabled?'#e6f4ee':'#f8fafc')+';border:1px solid '+(g.enabled?'#b6dfcd':'#d8d6d0')+';padding:8px 12px;flex:1;min-width:220px;">';
+    html+='<label style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#888;cursor:pointer;display:flex;align-items:center;gap:6px;"><input type="checkbox" '+(g.enabled?'checked':'')+' onchange="if(!fcData.projects[\''+pdef.id+'\'].growth)fcData.projects[\''+pdef.id+'\'].growth={enabled:false,hc:0,startWeek:3};fcData.projects[\''+pdef.id+'\'].growth.enabled=this.checked;fcSave();fcRender()"> Growth Expected</label>';
+    if(g.enabled){
+      html+='<div style="display:flex;gap:8px;margin-top:6px;">';
+      html+='<div class="fc-set-item"><label>Additional HC</label><input value="'+g.hc+'" type="number" onchange="fcData.projects[\''+pdef.id+'\'].growth.hc=+this.value;fcSave();fcRender()"></div>';
+      html+='<div class="fc-set-item"><label>Start Week</label><select onchange="fcData.projects[\''+pdef.id+'\'].growth.startWeek=+this.value;fcSave();fcRender()" style="font-family:\'DM Mono\',monospace;font-size:11px;padding:3px 6px;border:1px solid #d8d6d0;width:100%;">';
+      for(var sw=1;sw<=4;sw++){html+='<option value="'+sw+'"'+(g.startWeek===sw?' selected':'')+'>W'+sw+'</option>';}
+      html+='</select></div></div>';
+    }
+    html+='</div>';
+
+    // Material cost toggle
+    var m=pd.material||{enabled:false,oneTime:0,recurring:0,desc:''};
+    html+='<div style="background:'+(m.enabled?'#fdf3e6':'#f8fafc')+';border:1px solid '+(m.enabled?'#f5d5a0':'#d8d6d0')+';padding:8px 12px;flex:1;min-width:220px;">';
+    html+='<label style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#888;cursor:pointer;display:flex;align-items:center;gap:6px;"><input type="checkbox" '+(m.enabled?'checked':'')+' onchange="if(!fcData.projects[\''+pdef.id+'\'].material)fcData.projects[\''+pdef.id+'\'].material={enabled:false,oneTime:0,recurring:0,desc:\'\'};fcData.projects[\''+pdef.id+'\'].material.enabled=this.checked;fcSave();fcRender()"> Material Cost Changes</label>';
+    if(m.enabled){
+      html+='<div style="display:flex;gap:8px;margin-top:6px;">';
+      html+='<div class="fc-set-item"><label>One-Time ($)</label><input value="'+m.oneTime+'" type="number" onchange="fcData.projects[\''+pdef.id+'\'].material.oneTime=+this.value;fcSave();fcRender()"></div>';
+      html+='<div class="fc-set-item"><label>Recurring ($/mo)</label><input value="'+m.recurring+'" type="number" onchange="fcData.projects[\''+pdef.id+'\'].material.recurring=+this.value;fcSave();fcRender()"></div>';
+      html+='</div>';
+      html+='<div style="margin-top:4px;"><div class="fc-set-item"><label>Description</label><input value="'+(m.desc||'')+'" style="width:100%;text-align:left;" onchange="fcData.projects[\''+pdef.id+'\'].material.desc=this.value;fcSave()"></div></div>';
+    }
+    html+='</div></div>';
+
+    // Weekly table
+    html+='<div style="overflow-x:auto;"><table class="dtbl" style="font-size:10px;">';
+    // Header
+    html+='<tr><th style="text-align:left;width:100px;"></th>';
+    for(var wi=1;wi<=NW;wi++){
+      var wk=pd.weeks['w'+wi];
+      var isAct=wk&&wk.isActual;
+      html+='<th class="fc-wk-hdr '+(isAct?'fc-wk-actual':'fc-wk-forecast')+'">W'+wi+(isAct?' ✓':' est')+'</th>';
+    }
+    html+='<th style="background:#f8fafc;font-weight:700;">Monthly</th></tr>';
+
+    // Rows: Billable HC, Buffer HC, Std Hrs, OT Hrs, Added, Lost
+    var fields=[
+      {key:'bhc',label:'Billable HC',fmt:'int'},
+      {key:'buf',label:'Buffer HC',fmt:'int'},
+      {key:'stdHrs',label:'Std Hours',fmt:'int',placeholder:'auto'},
+      {key:'otHrs',label:'OT Hours',fmt:'int'},
+      {key:'added',label:'Added',fmt:'int'},
+      {key:'lost',label:'Attrition',fmt:'int'}
+    ];
+    fields.forEach(function(fld){
+      html+='<tr><td style="text-align:left;font-size:9px;color:#888;text-transform:uppercase;">'+fld.label+'</td>';
+      for(var wi=1;wi<=NW;wi++){
+        var wk=pd.weeks['w'+wi];
+        var val=wk?wk[fld.key]:'';
+        var disabled=wk&&wk.isActual?'disabled':'';
+        var ph=fld.placeholder||'';
+        html+='<td style="text-align:center;"><input class="fc-inp" type="number" value="'+(val!==null&&val!==''?val:'')+'" placeholder="'+ph+'" '+disabled+' onchange="fcData.projects[\''+pdef.id+'\'].weeks.w'+wi+'.'+fld.key+'=this.value===\'\'?null:+this.value;fcSave();fcRender()"></td>';
+      }
+      // Monthly sum or avg
+      var mval=0;
+      for(var wi2=1;wi2<=NW;wi2++){var wk2=pd.weeks['w'+wi2];if(wk2){if(fld.key==='bhc'||fld.key==='buf'){mval=wk2[fld.key]||mval;}else{mval+=(wk2[fld.key]||0);}}}
+      html+='<td class="fc-monthly">'+(fld.key==='bhc'||fld.key==='buf'?mval:mval||'-')+'</td></tr>';
+    });
+
+    // Calculated outputs
+    html+='<tr style="border-top:2px solid #d8d6d0;"><td style="text-align:left;font-weight:600;font-size:9px;color:#0f172a;">REVENUE</td>';
+    var mRev=0;
+    for(var wi=1;wi<=NW;wi++){var r=fcCalcProject(pdef.id,wi);mRev+=r.rev;html+='<td class="fc-calc" style="color:#0f172a;font-weight:600;">$'+(r.rev/1e3).toFixed(0)+'K</td>';}
+    html+='<td class="fc-monthly" style="color:#1a56db;">$'+(mRev/1e3).toFixed(0)+'K</td></tr>';
+
+    html+='<tr><td style="text-align:left;font-size:9px;color:#888;">COS</td>';
+    var mCos=0;
+    for(var wi=1;wi<=NW;wi++){var r=fcCalcProject(pdef.id,wi);mCos+=r.cos;html+='<td class="fc-calc">$'+(r.cos/1e3).toFixed(0)+'K</td>';}
+    html+='<td class="fc-monthly">$'+(mCos/1e3).toFixed(0)+'K</td></tr>';
+
+    html+='<tr><td style="text-align:left;font-size:9px;color:#0a7c4e;font-weight:600;">GM</td>';
+    for(var wi=1;wi<=NW;wi++){var r=fcCalcProject(pdef.id,wi);var gp=r.gm;var c=gp>=0?'#0a7c4e':'#b91c1c';html+='<td class="fc-calc" style="color:'+c+';font-weight:600;">$'+(gp/1e3).toFixed(0)+'K</td>';}
+    html+='<td class="fc-monthly" style="color:'+(pm.gm>=0?'#0a7c4e':'#b91c1c')+';">$'+(pm.gm/1e3).toFixed(0)+'K ('+gmPct+'%)</td></tr>';
+
+    html+='</table></div></div></div>';
+  });
+  ph.innerHTML=html;
+
+  // Monthly P&L table
+  var pnl=document.getElementById('fc-pnl-table');
+  var pt='<table class="dtbl"><tr><th style="text-align:left">Project</th><th>HC</th><th>Rate</th><th>Rev</th><th>COS</th><th>GM</th><th>GM%</th></tr>';
+  FC_PROJECTS.forEach(function(pdef){
+    var pm=projMonthly[pdef.id];
+    var gm=pm.rev>0?(pm.gm/pm.rev*100).toFixed(0):'0';
+    var gc=+gm>=35?'hi':(+gm>=20?'mid':'lo');
+    pt+='<tr><td>'+pdef.name+'</td><td>'+pm.bhc+'</td><td>$'+pm.rate.toFixed(2)+'</td><td>$'+(pm.rev/1e3).toFixed(0)+'K</td><td>$'+(pm.cos/1e3).toFixed(0)+'K</td><td class="'+gc+'">$'+(pm.gm/1e3).toFixed(0)+'K</td><td class="'+gc+'">'+gm+'%</td></tr>';
+  });
+  pt+='<tr class="tot"><td><strong>CX Total</strong></td><td></td><td></td><td><strong>$'+(totalRev/1e3).toFixed(0)+'K</strong></td><td><strong>$'+(totalCOS/1e3).toFixed(0)+'K</strong></td><td><strong>$'+(totalGP/1e3).toFixed(0)+'K</strong></td><td><strong>'+totalGM.toFixed(0)+'%</strong></td></tr>';
+  pt+='</table>';
+  pnl.innerHTML=pt;
+
+  // Weekly trend table
+  var tt=document.getElementById('fc-trend-table');
+  var p0=fcData.projects[FC_PROJECTS[0].id];
+  var th='<table class="dtbl"><tr><th style="text-align:left"></th>';
+  for(var wi=1;wi<=NW;wi++){var wk=p0.weeks['w'+wi];th+='<th class="fc-wk-hdr '+(wk&&wk.isActual?'fc-wk-actual':'fc-wk-forecast')+'">W'+wi+'</th>';}
+  th+='<th style="background:#f8fafc;font-weight:700;">Monthly</th></tr>';
+  th+='<tr class="bg-g"><td><strong>Revenue</strong></td>';for(var wi=0;wi<NW;wi++){th+='<td><strong>$'+(weekTotals[wi].rev/1e3).toFixed(0)+'K</strong></td>';}th+='<td><strong>$'+(totalRev/1e3).toFixed(0)+'K</strong></td></tr>';
+  th+='<tr class="bg-r"><td><strong>COS</strong></td>';for(var wi=0;wi<NW;wi++){th+='<td>$'+(weekTotals[wi].cos/1e3).toFixed(0)+'K</td>';}th+='<td><strong>$'+(totalCOS/1e3).toFixed(0)+'K</strong></td></tr>';
+  th+='<tr><td><strong>Gross Profit</strong></td>';for(var wi=0;wi<NW;wi++){var c=weekTotals[wi].gm>=0?'hi':'lo';th+='<td class="'+c+'"><strong>$'+(weekTotals[wi].gm/1e3).toFixed(0)+'K</strong></td>';}th+='<td class="'+(totalGP>=0?'hi':'lo')+'"><strong>$'+(totalGP/1e3).toFixed(0)+'K</strong></td></tr>';
+  th+='<tr><td><strong>GM%</strong></td>';for(var wi=0;wi<NW;wi++){var gm=weekTotals[wi].rev>0?(weekTotals[wi].gm/weekTotals[wi].rev*100).toFixed(0):'0';var gc=+gm>=35?'hi':(+gm>=20?'mid':'lo');th+='<td class="'+gc+'">'+gm+'%</td>';}th+='<td class="'+(totalGM>=35?'hi':(totalGM>=20?'mid':'lo'))+'"><strong>'+totalGM.toFixed(0)+'%</strong></td></tr>';
+  th+='</table>';
+  tt.innerHTML=th;
 }
 
-function sw(id,btn){document.querySelectorAll('.pane').forEach(p=>p.classList.remove('act'));document.querySelectorAll('.tab').forEach(b=>b.classList.remove('act'));document.getElementById('p-'+id).classList.add('act');btn.classList.add('act');}
-
-// Tooltip
-const tip=document.getElementById('tooltip');
-document.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el)return;tip.innerHTML=el.getAttribute('data-tip');tip.style.display='block';const r=el.getBoundingClientRect();let left=r.left+r.width/2-200;tip.style.left=left+'px';tip.style.top='0px';const th=tip.offsetHeight;let top=r.top-th-12;if(top<8)top=r.bottom+10;if(left<8)left=8;if(left+400>window.innerWidth)left=window.innerWidth-408;tip.style.left=left+'px';tip.style.top=top+'px';});
-document.addEventListener('mouseout',e=>{if(e.target.closest('[data-tip]'))tip.style.display='none';});
+renderCharts();fcInit();
 </script>
 </body>
 </html>
